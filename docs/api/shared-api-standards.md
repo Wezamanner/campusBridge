@@ -1,31 +1,37 @@
 # CampusBridge API: Shared Standards & Protocol Specification
+## Strict SRS v2.0 Compliance Baseline
 
-## 1. Executive Summary & Purpose
-
-This document defines the uniform API design standards, payload formats, authentication rules, error handling structures, and conventions for the CampusBridge university learning and internship platform. All four development streams (Student/Instructor, Coordinator, and Administrator) adhere to these unified contracts to guarantee seamless interoperability across the single MongoDB database instance and unified Express.js application.
+- **Functional Authority**: CampusBridge Software Requirements Specification (SRS) v2.0
+- **Base URI Prefix**: `/api/v1`
 
 ---
 
-## 2. API Design Principles & Base Architecture
+## 1. Executive Summary & Architectural Scope
 
-- **Protocol**: RESTful HTTP over HTTPS (with localhost HTTP in development).
-- **Format**: JSON (`application/json`) for standard requests and responses; `multipart/form-data` for file uploads.
-- **Character Encoding**: UTF-8.
-- **Prefix & Versioning**: All endpoints must be versioned and use the global prefix:
+This document formalizes the unified REST API design conventions, payload structures, status codes, query protocols, and security headers across the CampusBridge platform. All developer workstreams adhere to these standards to maintain total consistency across the shared Express.js application and MongoDB database.
+
+---
+
+## 2. Global Standards & Protocol Rules
+
+- **Base URL Prefix**: All endpoints must be versioned under:
   ```text
   /api/v1
   ```
-- **Language & Runtime**: Node.js (v18+) with Express.js and ES Modules (`import`/`export`).
-- **Database Layer**: MongoDB (v6+) through Mongoose ODM.
-- **State Management**: Stateless REST with short-lived JSON Web Tokens (JWT).
+- **Payload Format**: `application/json` (UTF-8) for standard request/response bodies; `multipart/form-data` for file uploads.
+- **Authentication Header**:
+  ```http
+  Authorization: Bearer <JWT_ACCESS_TOKEN>
+  ```
+- **Stateless REST**: State resides in MongoDB; authentication uses stateless JWTs verified via `server/src/middleware/auth.js`.
 
 ---
 
 ## 3. Standard Response Envelopes
 
-Every API endpoint must respond using a consistent response wrapper. This enables frontend services and consumers to safely parse and process API outcomes without ad-hoc payload decoding.
+Every API endpoint responds with a predictable envelope format.
 
-### 3.1. Standard Success Envelope (Non-Paginated)
+### 3.1. Standard Success Envelope (Single Entity / Action)
 
 ```json
 {
@@ -41,8 +47,6 @@ Every API endpoint must respond using a consistent response wrapper. This enable
 ```
 
 ### 3.2. Standard Success Envelope (Paginated Collections)
-
-For endpoints returning collections that support pagination:
 
 ```json
 {
@@ -68,20 +72,14 @@ For endpoints returning collections that support pagination:
 
 ### 3.3. Standard Error Envelope
 
-When a client or server error occurs, the server responds with a descriptive message and an optional array of field-level validation errors:
-
 ```json
 {
   "success": false,
-  "message": "Validation failed on assignment submission.",
+  "message": "Validation failed on request payload.",
   "errors": [
     {
       "field": "deadline",
-      "message": "Assignment submission deadline has passed."
-    },
-    {
-      "field": "file",
-      "message": "File size exceeds the 5 MB threshold."
+      "message": "Assignment deadline must be a future date."
     }
   ]
 }
@@ -91,88 +89,48 @@ When a client or server error occurs, the server responds with a descriptive mes
 
 ## 4. HTTP Status Code Conventions
 
-The API adheres strictly to standard HTTP semantics:
-
 | HTTP Status | Name | CampusBridge Usage |
 |---|---|---|
-| `200` | OK | Successful GET, PUT, or PATCH operation. Returned when modifying an existing entity. |
-| `201` | Created | Successful POST operation creating a new record (assignment, submission, enrollment, project, task, message). |
-| `204` | No Content | Successful DELETE operation with no body to return (or return 200 with message). |
-| `400` | Bad Request | Syntactic request failure, malformed JSON, or missing required fields in request payload. |
-| `401` | Unauthorized | Missing, expired, invalid, or forged Bearer JWT. Unauthenticated user accessing protected route. |
-| `403` | Forbidden | Authenticated user lacks authorized role, lacks resource ownership, or user account is deactivated (`active: false`). |
-| `404` | Not Found | Requested entity, route, or resource does not exist in the database. |
-| `409` | Conflict | Business rule conflict (e.g. duplicate enrollment in same course, duplicate internship application, unique key violation). |
-| `413` | Payload Too Large | Uploaded file exceeds configured limit (CV > 2 MB, Assignment Submission > 5 MB). |
-| `415` | Unsupported Media Type | Uploaded file MIME type or extension not permitted. |
-| `422` | Unprocessable Entity | Semantically invalid data (e.g., assignment deadline is in the past, grade score exceeds maxScore, invalid status transition). |
-| `500` | Internal Server Error | Unexpected server runtime exception. In production, error stack trace is redacted. |
+| `200` | OK | Successful GET, PUT, or PATCH operation. |
+| `201` | Created | Successful POST operation creating a new record (submission, enrollment, task, message, assignment). |
+| `204` | No Content | Successful deletion without a response body. |
+| `400` | Bad Request | Syntactic request failure, malformed JSON, or missing required body fields. |
+| `401` | Unauthorized | Missing, expired, invalid, or forged Bearer JWT. |
+| `403` | Forbidden | Authenticated user lacks required role, lacks resource ownership, violates pairing rules, or account is deactivated (`active: false`). |
+| `404` | Not Found | Requested entity or route does not exist. |
+| `409` | Conflict | Business logic conflict (duplicate enrollment, duplicate application, duplicate submission). |
+| `413` | Payload Too Large | Uploaded file exceeds configured limits (CV > 2 MB, Submission > 5 MB). |
+| `415` | Unsupported Media Type | Uploaded file format or MIME type is not allowed. |
+| `422` | Unprocessable Entity | Semantically invalid data (past deadline, score > maxScore, terminal application state). |
+| `500` | Internal Server Error | Unhandled server exception (stack trace redacted in production). |
 
 ---
 
-## 5. Pagination, Filtering, and Sorting Conventions
-
-Collections that can grow unbounded must implement pagination, filtering, and sorting to protect server memory and network bandwidth.
-
-### 5.1. Standard Query Parameters
+## 5. Pagination, Filtering, and Query Parameters
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
 | `page` | Integer | `1` | 1-based page index. |
-| `limit` | Integer | `10` | Maximum items per page (maximum allowed: `100`). |
-| `sort` | String | `createdAt` | Field to sort by (e.g., `deadline`, `title`, `averageScore`). |
-| `order` | String | `desc` | Sort direction: `asc` (ascending) or `desc` (descending). |
+| `limit` | Integer | `10` | Maximum items per page (maximum limit: `100`). |
 | `search` | String | `""` | Search keyword for text matching. |
-| `status` | String | (all) | Filter by entity status (e.g., `todo`, `done`, `Submitted`, `Graded`, `active`). |
+| `status` | String | (all) | Status filter matching model enums (e.g. `todo`, `done`, `Submitted`, `Graded`). |
+| `courseId` | ObjectId | (none) | Filter records belonging to a specific course. |
 
 ---
 
-## 6. Authentication and Authorization Protocol
+## 6. Audit Logging Protocol (FR-35)
 
-### 6.1. Bearer Token Format
-
-All protected endpoints require the client to supply a valid JWT in the HTTP Authorization header:
-
-```http
-Authorization: Bearer <JWT_ACCESS_TOKEN>
-```
-
-### 6.2. Roles and Role Hierarchy
-
-CampusBridge defines four mutually exclusive user roles in `User.role`:
-
-1. `student`: Enrolls in courses, submits assignments, tracks progress, manages personal projects/tasks, applies for internships, views achievements.
-2. `instructor`: Manages course materials/resources, creates assignments, reviews and grades student submissions, monitors at-risk students.
-3. `coordinator`: Creates and archives courses, assigns instructors, manages partner companies and internships, reviews applications.
-4. `admin`: Manages user accounts and roles, controls self-registration, publishes system announcements, manages public content.
-
-### 6.3. Account Status Check (Deactivation)
-
-Per requirement **FR-22** and **SEC-04**, when a user's `active` property is `false`, any authenticated request must immediately reject with `403 Forbidden` and message:
-`"Your account has been deactivated. Please contact an administrator."`
-
-### 6.4. Data Privacy and Exposure Standards
-
-1. **Password Hashes**: `passwordHash` must always have `select: false` in Mongoose and be stripped in `.toJSON()`.
-2. **Tokens and Secrets**: Never return or log JWT secrets, session keys, or password reset tokens.
-3. **Student Privacy**: A student can only view their own grades, submissions, CV, and progress. Course rosters shown to instructors only show enrolled students for their assigned course.
-4. **Leaderboard Anonymity**: Public/cohort rankings must anonymize student identities (e.g. initials or Student ID hash) unless explicitly opted in.
-
----
-
-## 7. Audit Logging Protocol
-
-Per requirement **FR-35**, critical state-altering mutations automatically record an immutable `ActivityLog` entry:
+In accordance with requirement **FR-35**, state-altering operations record an immutable `ActivityLog` entry:
 
 ```javascript
 {
   userId: req.user._id,
-  action: 'SUBMIT_ASSIGNMENT', // from defined ActivityLog enum
+  action: 'SUBMIT_ASSIGNMENT',
   targetType: 'Submission',
   targetId: submission._id,
   meta: {
-    assignmentTitle: assignment.title,
-    courseCode: course.code
+    courseCode: course.code,
+    assignmentTitle: assignment.title
   }
 }
 ```

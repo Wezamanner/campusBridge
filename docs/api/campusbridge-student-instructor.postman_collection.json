@@ -1,8 +1,8 @@
 {
   "info": {
-    "_postman_id": "campusbridge-phase1-student-instructor",
-    "name": "CampusBridge - Student & Instructor API Collection",
-    "description": "Postman collection for Student and Instructor API contracts (Phase 1). Uses {{baseUrl}}, {{studentToken}}, and {{instructorToken}}.",
+    "_postman_id": "campusbridge-phase1-student-instructor-audited",
+    "name": "CampusBridge - Student & Instructor API Collection (Audited SRS v2.0)",
+    "description": "Audited Postman collection for Student and Instructor API contracts complying with CampusBridge SRS v2.0. Uses {{baseUrl}}, {{studentToken}}, and {{instructorToken}}.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -57,22 +57,22 @@
       "type": "string"
     },
     {
-      "key": "resourceId",
-      "value": "6732f5c1e4b02a1b9c8d5a11",
+      "key": "notificationId",
+      "value": "67330511e4b02a1b9c8dcc11",
       "type": "string"
     },
     {
-      "key": "notificationId",
-      "value": "67330511e4b02a1b9c8dcc11",
+      "key": "partnerUserId",
+      "value": "6732e8f1e4b02a1b9c8d2a10",
       "type": "string"
     }
   ],
   "item": [
     {
-      "name": "1. Student Profile & CV",
+      "name": "1. Profile & Skills/CV",
       "item": [
         {
-          "name": "Get Own Profile",
+          "name": "Get Profile",
           "request": {
             "method": "GET",
             "header": [
@@ -83,20 +83,19 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/student/profile",
+              "raw": "{{baseUrl}}/profile",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "student",
                 "profile"
               ]
             },
-            "description": "Retrieve current student profile (FR-03)"
+            "description": "Retrieve current profile (FR-03, FR-38)"
           }
         },
         {
-          "name": "Update Own Profile",
+          "name": "Update Profile",
           "request": {
             "method": "PUT",
             "header": [
@@ -112,54 +111,28 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/student/profile",
+              "raw": "{{baseUrl}}/profile",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "student",
                 "profile"
               ]
             },
-            "description": "Update student profile attributes (FR-03, FR-23)",
+            "description": "Update profile attributes (FR-03, FR-23, FR-39)",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Alex Rivera\",\n  \"program\": \"Computer Science\",\n  \"year\": 3,\n  \"skills\": [\n    \"JavaScript\",\n    \"React\",\n    \"Node.js\",\n    \"MongoDB\"\n  ],\n  \"preferences\": {\n    \"theme\": \"dark\"\n  }\n}"
             }
           }
-        },
-        {
-          "name": "Delete CV Document",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{studentToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/student/profile/cv",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "student",
-                "profile",
-                "cv"
-              ]
-            },
-            "description": "Unlink and remove CV document (FR-23)"
-          }
         }
       ]
     },
     {
-      "name": "2. Student Courses & Enrollment",
+      "name": "2. Courses & Enrollment",
       "item": [
         {
-          "name": "Browse Available Courses",
+          "name": "Browse Courses Catalog",
           "request": {
             "method": "GET",
             "header": [
@@ -170,20 +143,29 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/student/courses?page=1&limit=10",
+              "raw": "{{baseUrl}}/courses?page=1&limit=10",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "student",
-                "courses?page=1&limit=10"
+                "courses"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
               ]
             },
-            "description": "Browse course catalog (FR-04, FR-05)"
+            "description": "Browse courses catalog (FR-04, FR-05)"
           }
         },
         {
-          "name": "Get Course Details",
+          "name": "View Course Details",
           "request": {
             "method": "GET",
             "header": [
@@ -194,17 +176,16 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/student/courses/{{courseId}}",
+              "raw": "{{baseUrl}}/courses/{{courseId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "student",
                 "courses",
                 "{{courseId}}"
               ]
             },
-            "description": "View course syllabus and metadata (FR-05)"
+            "description": "View course details (FR-05)"
           }
         },
         {
@@ -219,43 +200,17 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/student/courses/{{courseId}}/enroll",
+              "raw": "{{baseUrl}}/courses/{{courseId}}/enroll",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "student",
                 "courses",
                 "{{courseId}}",
                 "enroll"
               ]
             },
             "description": "Enroll in active course (FR-05)"
-          }
-        },
-        {
-          "name": "List Enrolled Courses",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{studentToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/student/courses/enrolled",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "student",
-                "courses",
-                "enrolled"
-              ]
-            },
-            "description": "View courses student is enrolled in with progress (FR-05)"
           }
         },
         {
@@ -270,22 +225,60 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/student/courses/{{courseId}}/resources",
+              "raw": "{{baseUrl}}/courses/{{courseId}}/resources",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "student",
                 "courses",
                 "{{courseId}}",
                 "resources"
               ]
             },
-            "description": "View materials for enrolled course (FR-05)"
+            "description": "Access materials for enrolled course (FR-05)"
           }
         },
         {
-          "name": "View Course Assignments",
+          "name": "Add Course Resource (Instructor)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{instructorToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/courses/{{courseId}}/resources",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "courses",
+                "{{courseId}}",
+                "resources"
+              ]
+            },
+            "description": "Instructor adds learning resource (FR-04)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Week 2: Express Routing & Middleware Slides\",\n  \"type\": \"slides\",\n  \"url\": \"/uploads/resources/week2_slides.pdf\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Assignments & Grading",
+      "item": [
+        {
+          "name": "List Assignments",
           "request": {
             "method": "GET",
             "header": [
@@ -296,82 +289,152 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/student/courses/{{courseId}}/assignments",
+              "raw": "{{baseUrl}}/assignments?courseId={{courseId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "student",
+                "assignments"
+              ],
+              "query": [
+                {
+                  "key": "courseId",
+                  "value": "{{courseId}}"
+                }
+              ]
+            },
+            "description": "List assignments (FR-06, FR-07)"
+          }
+        },
+        {
+          "name": "View Assignment Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/assignments/{{assignmentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "assignments",
+                "{{assignmentId}}"
+              ]
+            },
+            "description": "View instructions, deadline and score (FR-06, FR-07)"
+          }
+        },
+        {
+          "name": "Create Assignment (Instructor)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{instructorToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/courses/{{courseId}}/assignments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
                 "courses",
                 "{{courseId}}",
                 "assignments"
               ]
             },
-            "description": "View assignments for enrolled course (FR-05, FR-06)"
-          }
-        }
-      ]
-    },
-    {
-      "name": "3. Student Assignments & Submission",
-      "item": [
-        {
-          "name": "List All Enrolled Assignments",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{studentToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/student/assignments",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "student",
-                "assignments"
-              ]
-            },
-            "description": "List assignments across enrolled courses (FR-06, FR-07)"
+            "description": "Instructor creates assignment (FR-06)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Lab 1: REST API with Express\",\n  \"description\": \"Build an Express API with CRUD endpoints and Mongoose schemas.\",\n  \"deadline\": \"2026-11-15T23:59:59.000Z\",\n  \"maxScore\": 100,\n  \"allowLate\": false\n}"
+            }
           }
         },
         {
-          "name": "View Own Submission & Grade",
+          "name": "View Submissions Queue (Instructor)",
           "request": {
             "method": "GET",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{studentToken}}",
+                "value": "Bearer {{instructorToken}}",
                 "type": "text"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/student/assignments/{{assignmentId}}/submission",
+              "raw": "{{baseUrl}}/instructor/submissions?courseId={{courseId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "student",
-                "assignments",
-                "{{assignmentId}}",
-                "submission"
+                "instructor",
+                "submissions"
+              ],
+              "query": [
+                {
+                  "key": "courseId",
+                  "value": "{{courseId}}"
+                }
               ]
             },
-            "description": "Retrieve own submission details, score and feedback (FR-07, FR-08)"
+            "description": "Instructor grading queue (FR-08)"
+          }
+        },
+        {
+          "name": "Grade Submission (Instructor)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{instructorToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/submissions/{{submissionId}}/grade",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "submissions",
+                "{{submissionId}}",
+                "grade"
+              ]
+            },
+            "description": "Instructor grades submission and progress recalculates (FR-08, FR-09)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"score\": 95,\n  \"feedback\": \"Thorough test coverage and clean middleware implementation.\"\n}"
+            }
           }
         }
       ]
     },
     {
-      "name": "4. Student Learning Progress",
+      "name": "4. Progress, Achievements & Rankings",
       "item": [
         {
-          "name": "Get Overall Learning Progress",
+          "name": "Get Learning Progress (Student)",
           "request": {
             "method": "GET",
             "header": [
@@ -382,20 +445,48 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/student/progress",
+              "raw": "{{baseUrl}}/progress",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "student",
                 "progress"
               ]
             },
-            "description": "Aggregate progress, GPA and submission statistics (FR-09)"
+            "description": "Calculate progress per course and overall from submitted work (FR-09)"
           }
         },
         {
-          "name": "Get Upcoming Deadlines",
+          "name": "Get Course Progress & At-Risk (Instructor)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{instructorToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/progress?flagged=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "progress"
+              ],
+              "query": [
+                {
+                  "key": "flagged",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Progress of own courses with flagged at-risk students for low progress, missed deadlines, inactivity (FR-09, UC-I03)"
+          }
+        },
+        {
+          "name": "View Achievement Badges",
           "request": {
             "method": "GET",
             "header": [
@@ -406,22 +497,44 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/student/deadlines",
+              "raw": "{{baseUrl}}/achievements",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "student",
-                "deadlines"
+                "achievements"
               ]
             },
-            "description": "Upcoming assignment and task deadlines (FR-06, FR-44)"
+            "description": "Milestone achievement badges (FR-17)"
+          }
+        },
+        {
+          "name": "View Cohort Rankings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/rankings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "rankings"
+              ]
+            },
+            "description": "Rank students by average submission score with first names and initials only (FR-17)"
           }
         }
       ]
     },
     {
-      "name": "5. Student Internships & Applications",
+      "name": "5. Internships & Applications",
       "item": [
         {
           "name": "Browse Open Internships",
@@ -435,16 +548,39 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/student/internships",
+              "raw": "{{baseUrl}}/internships",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "student",
                 "internships"
               ]
             },
             "description": "Browse active verified internships (FR-10, FR-11)"
+          }
+        },
+        {
+          "name": "View Internship Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/internships/{{internshipId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "internships",
+                "{{internshipId}}"
+              ]
+            },
+            "description": "View requirements and description (FR-10)"
           }
         },
         {
@@ -464,26 +600,25 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/student/internships/{{internshipId}}/apply",
+              "raw": "{{baseUrl}}/internships/{{internshipId}}/applications",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "student",
                 "internships",
                 "{{internshipId}}",
-                "apply"
+                "applications"
               ]
             },
-            "description": "Submit application with cover message and CV (FR-11)",
+            "description": "Student submits application with message and CV (FR-11)",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"message\": \"I am applying for the full stack internship position...\",\n  \"useProfileCv\": true\n}"
+              "raw": "{\n  \"message\": \"I am applying for the full-stack internship position...\",\n  \"useProfileCv\": true\n}"
             }
           }
         },
         {
-          "name": "Track Own Applications",
+          "name": "Track Applications",
           "request": {
             "method": "GET",
             "header": [
@@ -494,277 +629,19 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/student/applications",
+              "raw": "{{baseUrl}}/applications",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "student",
                 "applications"
               ]
             },
-            "description": "Track application workflow status (FR-11, FR-12)"
+            "description": "View status workflow for own applications (FR-11, FR-12)"
           }
         },
         {
           "name": "Withdraw Application",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{studentToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/student/applications/{{applicationId}}/withdraw",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "student",
-                "applications",
-                "{{applicationId}}",
-                "withdraw"
-              ]
-            },
-            "description": "Withdraw pending application (FR-11)"
-          }
-        }
-      ]
-    },
-    {
-      "name": "6. Student Achievements & Rankings",
-      "item": [
-        {
-          "name": "View Earned Badges",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{studentToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/student/achievements",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "student",
-                "achievements"
-              ]
-            },
-            "description": "View earned achievement badges (FR-17)"
-          }
-        },
-        {
-          "name": "View Cohort Leaderboard",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{studentToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/student/rankings",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "student",
-                "rankings"
-              ]
-            },
-            "description": "Cohort rankings with privacy anonymization (FR-17)"
-          }
-        }
-      ]
-    },
-    {
-      "name": "7. Student Projects & Tasks (ASM-02)",
-      "item": [
-        {
-          "name": "List Personal Projects",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{studentToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/student/projects",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "student",
-                "projects"
-              ]
-            },
-            "description": "List projects with task completion progress (FR-27, FR-28)"
-          }
-        },
-        {
-          "name": "Create Personal Project",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{studentToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/student/projects",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "student",
-                "projects"
-              ]
-            },
-            "description": "Create student project (FR-27)",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Senior Capstone Drone Project\",\n  \"description\": \"Autonomous flight navigation research\",\n  \"status\": \"active\",\n  \"dueDate\": \"2026-12-15T00:00:00.000Z\"\n}"
-            }
-          }
-        },
-        {
-          "name": "Update Project",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{studentToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/student/projects/{{projectId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "student",
-                "projects",
-                "{{projectId}}"
-              ]
-            },
-            "description": "Update project attributes (FR-27)",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Senior Capstone Drone Project (Updated)\",\n  \"status\": \"active\"\n}"
-            }
-          }
-        },
-        {
-          "name": "Archive Project",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{studentToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/student/projects/{{projectId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "student",
-                "projects",
-                "{{projectId}}"
-              ]
-            },
-            "description": "Soft-archive project (FR-29)"
-          }
-        },
-        {
-          "name": "List Personal Tasks",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{studentToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/student/tasks",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "student",
-                "tasks"
-              ]
-            },
-            "description": "List tasks filtered by status/priority (FR-30, FR-31)"
-          }
-        },
-        {
-          "name": "Create Personal Task",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{studentToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/student/tasks",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "student",
-                "tasks"
-              ]
-            },
-            "description": "Create student task (FR-30)",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"title\": \"Implement API route unit tests\",\n  \"priority\": \"high\",\n  \"status\": \"todo\",\n  \"projectId\": \"{{projectId}}\"\n}"
-            }
-          }
-        },
-        {
-          "name": "Toggle Task Status (Todo/Done)",
           "request": {
             "method": "PATCH",
             "header": [
@@ -780,78 +657,28 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/student/tasks/{{taskId}}/status",
+              "raw": "{{baseUrl}}/applications/{{applicationId}}/status",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "student",
-                "tasks",
-                "{{taskId}}",
+                "applications",
+                "{{applicationId}}",
                 "status"
               ]
             },
-            "description": "Mark task completed or reopened (FR-32)",
+            "description": "Withdraw active application before final decision (FR-11)",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"status\": \"done\"\n}"
+              "raw": "{\n  \"status\": \"Withdrawn\"\n}"
             }
           }
         }
       ]
     },
     {
-      "name": "8. Student Activity & AI Assistant",
+      "name": "6. AI Learning Assistant (Student Only)",
       "item": [
-        {
-          "name": "Get Recent Activity",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{studentToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/student/activity",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "student",
-                "activity"
-              ]
-            },
-            "description": "Recent activity feed (FR-35, FR-36)"
-          }
-        },
-        {
-          "name": "Get Weekly Activity Chart",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{studentToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/student/activity/weekly",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "student",
-                "activity",
-                "weekly"
-              ]
-            },
-            "description": "Weekly activity breakdown for dashboard chart (FR-37)"
-          }
-        },
         {
           "name": "Generate AI Study Plan",
           "request": {
@@ -869,20 +696,19 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/student/ai/study-plan",
+              "raw": "{{baseUrl}}/ai/study-plan",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "student",
                 "ai",
                 "study-plan"
               ]
             },
-            "description": "AI study plan generator (FR-19)",
+            "description": "Day-by-day plan from courses, deadlines, and hours (FR-19, CON-05)",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"daysAvailable\": 7,\n  \"dailyHours\": 3,\n  \"focusCourseId\": \"{{courseId}}\"\n}"
+              "raw": "{\n  \"availableHours\": 3\n}"
             }
           }
         },
@@ -903,25 +729,76 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/student/ai/ask",
+              "raw": "{{baseUrl}}/ai/ask",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "student",
                 "ai",
                 "ask"
               ]
             },
-            "description": "Read-only AI course Q&A (FR-20)",
+            "description": "Read-only Q&A assistant (FR-20, CON-05)",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"question\": \"How does Express errorHandler capture rejected promises?\",\n  \"courseId\": \"{{courseId}}\"\n}"
+              "raw": "{\n  \"question\": \"What is the difference between authenticate and authorize middlewares?\"\n}"
             }
           }
         },
         {
           "name": "AI Internship Skill Matcher",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ai/internship-matches",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ai",
+                "internship-matches"
+              ]
+            },
+            "description": "Ranks open internships by skill overlap (FR-21, CON-05)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Personal Projects & Tasks (Student Only)",
+      "item": [
+        {
+          "name": "List Personal Projects",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/projects",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "projects"
+              ]
+            },
+            "description": "Projects with task completion progress (FR-27, FR-28)"
+          }
+        },
+        {
+          "name": "Create Personal Project",
           "request": {
             "method": "POST",
             "header": [
@@ -937,60 +814,29 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/student/ai/skill-match",
+              "raw": "{{baseUrl}}/projects",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "student",
-                "ai",
-                "skill-match"
+                "projects"
               ]
             },
-            "description": "Skill gap analysis and internship recommendations (FR-21)",
+            "description": "Create student project (FR-27)",
             "body": {
               "mode": "raw",
-              "raw": "{}"
+              "raw": "{\n  \"name\": \"Senior Capstone Drone Project\",\n  \"description\": \"Autonomous flight navigation research\",\n  \"status\": \"active\",\n  \"dueDate\": \"2026-12-15T00:00:00.000Z\"\n}"
             }
-          }
-        }
-      ]
-    },
-    {
-      "name": "9. Instructor Profile & Courses",
-      "item": [
-        {
-          "name": "Get Own Profile",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{instructorToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/instructor/profile",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "instructor",
-                "profile"
-              ]
-            },
-            "description": "View instructor profile (FR-03)"
           }
         },
         {
-          "name": "Update Own Profile",
+          "name": "Update Personal Project",
           "request": {
             "method": "PUT",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{instructorToken}}",
+                "value": "Bearer {{studentToken}}",
                 "type": "text"
               },
               {
@@ -1000,291 +846,83 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/instructor/profile",
+              "raw": "{{baseUrl}}/projects/{{projectId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "instructor",
-                "profile"
+                "projects",
+                "{{projectId}}"
               ]
             },
-            "description": "Update instructor profile (FR-03)",
+            "description": "Edit project attributes (FR-29)",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Dr. Sarah Jenkins\",\n  \"department\": \"Computer Science & Software Engineering\"\n}"
+              "raw": "{\n  \"name\": \"Senior Capstone Drone Project (Updated)\",\n  \"status\": \"active\"\n}"
             }
           }
         },
         {
-          "name": "List Assigned Courses",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{instructorToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/instructor/courses",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "instructor",
-                "courses"
-              ]
-            },
-            "description": "List courses assigned to instructor (FR-04)"
-          }
-        },
-        {
-          "name": "View Assigned Course Details",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{instructorToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/instructor/courses/{{courseId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "instructor",
-                "courses",
-                "{{courseId}}"
-              ]
-            },
-            "description": "View course details (FR-04)"
-          }
-        },
-        {
-          "name": "View Enrolled Student Roster",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{instructorToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/instructor/courses/{{courseId}}/students",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "instructor",
-                "courses",
-                "{{courseId}}",
-                "students"
-              ]
-            },
-            "description": "View enrolled students and progress (FR-05, FR-09)"
-          }
-        },
-        {
-          "name": "View Course Aggregate Stats",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{instructorToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/instructor/courses/{{courseId}}/stats",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "instructor",
-                "courses",
-                "{{courseId}}",
-                "stats"
-              ]
-            },
-            "description": "View performance stats and class averages (FR-09, FR-44)"
-          }
-        }
-      ]
-    },
-    {
-      "name": "10. Instructor Course Resources",
-      "item": [
-        {
-          "name": "List Course Resources",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{instructorToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/instructor/courses/{{courseId}}/resources",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "instructor",
-                "courses",
-                "{{courseId}}",
-                "resources"
-              ]
-            },
-            "description": "List learning materials (FR-04)"
-          }
-        },
-        {
-          "name": "Add Course Resource",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{instructorToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/instructor/courses/{{courseId}}/resources",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "instructor",
-                "courses",
-                "{{courseId}}",
-                "resources"
-              ]
-            },
-            "description": "Upload or add course learning resource (FR-04)",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"title\": \"Week 3: Advanced Mongoose Modeling Slides\",\n  \"type\": \"slides\",\n  \"url\": \"https://storage.campusbridge.edu/courses/cs301/week3_slides.pdf\"\n}"
-            }
-          }
-        },
-        {
-          "name": "Update Course Resource",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{instructorToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/instructor/courses/{{courseId}}/resources/{{resourceId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "instructor",
-                "courses",
-                "{{courseId}}",
-                "resources",
-                "{{resourceId}}"
-              ]
-            },
-            "description": "Update learning resource metadata (FR-04)",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"title\": \"Week 3: Advanced Mongoose Modeling Slides (v2)\",\n  \"url\": \"https://storage.campusbridge.edu/courses/cs301/week3_slides_v2.pdf\"\n}"
-            }
-          }
-        },
-        {
-          "name": "Delete Course Resource",
+          "name": "Archive or Delete Project",
           "request": {
             "method": "DELETE",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{instructorToken}}",
+                "value": "Bearer {{studentToken}}",
                 "type": "text"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/instructor/courses/{{courseId}}/resources/{{resourceId}}",
+              "raw": "{{baseUrl}}/projects/{{projectId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "instructor",
-                "courses",
-                "{{courseId}}",
-                "resources",
-                "{{resourceId}}"
+                "projects",
+                "{{projectId}}"
               ]
             },
-            "description": "Remove resource from course (FR-04)"
+            "description": "Archive or delete personal project (FR-29)"
           }
-        }
-      ]
-    },
-    {
-      "name": "11. Instructor Assignment Management",
-      "item": [
+        },
         {
-          "name": "List Course Assignments",
+          "name": "List Personal Tasks",
           "request": {
             "method": "GET",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{instructorToken}}",
+                "value": "Bearer {{studentToken}}",
                 "type": "text"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/instructor/courses/{{courseId}}/assignments",
+              "raw": "{{baseUrl}}/tasks?status=todo",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "instructor",
-                "courses",
-                "{{courseId}}",
-                "assignments"
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "todo"
+                }
               ]
             },
-            "description": "List assignments for course (FR-06)"
+            "description": "List tasks filtered by status or project (FR-30, FR-31)"
           }
         },
         {
-          "name": "Create Course Assignment",
+          "name": "Create Personal Task",
           "request": {
             "method": "POST",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{instructorToken}}",
+                "value": "Bearer {{studentToken}}",
                 "type": "text"
               },
               {
@@ -1294,57 +932,29 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/instructor/courses/{{courseId}}/assignments",
+              "raw": "{{baseUrl}}/tasks",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "instructor",
-                "courses",
-                "{{courseId}}",
-                "assignments"
+                "tasks"
               ]
             },
-            "description": "Author assignment and notify enrolled students (FR-06)",
+            "description": "Create task (FR-30)",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Lab 2: MongoDB Schemas & Indexing\",\n  \"description\": \"Create 3 normalized Mongoose models with validation hooks and compound indexes.\",\n  \"deadline\": \"2026-11-22T23:59:59.000Z\",\n  \"maxScore\": 100,\n  \"allowLate\": false\n}"
+              "raw": "{\n  \"title\": \"Implement API route unit tests\",\n  \"priority\": \"high\",\n  \"dueDate\": \"2026-11-14T23:59:59.000Z\",\n  \"projectId\": \"{{projectId}}\"\n}"
             }
           }
         },
         {
-          "name": "View Assignment Details",
+          "name": "Update / Toggle Task Status",
           "request": {
-            "method": "GET",
+            "method": "PATCH",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{instructorToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/instructor/assignments/{{assignmentId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "instructor",
-                "assignments",
-                "{{assignmentId}}"
-              ]
-            },
-            "description": "View assignment details and submission counts (FR-06)"
-          }
-        },
-        {
-          "name": "Update Assignment",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{instructorToken}}",
+                "value": "Bearer {{studentToken}}",
                 "type": "text"
               },
               {
@@ -1354,342 +964,50 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/instructor/assignments/{{assignmentId}}",
+              "raw": "{{baseUrl}}/tasks/{{taskId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "instructor",
-                "assignments",
-                "{{assignmentId}}"
+                "tasks",
+                "{{taskId}}"
               ]
             },
-            "description": "Update assignment details (FR-06)",
+            "description": "Toggle status between todo and done (FR-32)",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"description\": \"Updated guidelines: ensure unique indexes are tested.\",\n  \"deadline\": \"2026-11-23T23:59:59.000Z\"\n}"
+              "raw": "{\n  \"status\": \"done\"\n}"
             }
           }
         },
         {
-          "name": "Delete Assignment",
+          "name": "Delete Task",
           "request": {
             "method": "DELETE",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{instructorToken}}",
+                "value": "Bearer {{studentToken}}",
                 "type": "text"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/instructor/assignments/{{assignmentId}}",
+              "raw": "{{baseUrl}}/tasks/{{taskId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
-                "instructor",
-                "assignments",
-                "{{assignmentId}}"
+                "tasks",
+                "{{taskId}}"
               ]
             },
-            "description": "Delete assignment if no submissions received (FR-06)"
+            "description": "Delete personal task (FR-32)"
           }
         }
       ]
     },
     {
-      "name": "12. Instructor Submission Review & Grading",
-      "item": [
-        {
-          "name": "Retrieve Global Grading Queue",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{instructorToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/instructor/grading-queue",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "instructor",
-                "grading-queue"
-              ]
-            },
-            "description": "List all pending ungraded submissions across assigned courses (FR-07, FR-08)"
-          }
-        },
-        {
-          "name": "List Submissions for Course",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{instructorToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/instructor/courses/{{courseId}}/submissions",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "instructor",
-                "courses",
-                "{{courseId}}",
-                "submissions"
-              ]
-            },
-            "description": "List submissions for a specific course (FR-07)"
-          }
-        },
-        {
-          "name": "Get Submission Details",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{instructorToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/instructor/submissions/{{submissionId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "instructor",
-                "submissions",
-                "{{submissionId}}"
-              ]
-            },
-            "description": "Inspect student submission text and file (FR-07)"
-          }
-        },
-        {
-          "name": "Grade Submission",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{instructorToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/instructor/submissions/{{submissionId}}/grade",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "instructor",
-                "submissions",
-                "{{submissionId}}",
-                "grade"
-              ]
-            },
-            "description": "Grade submission, update progress and notify student (FR-08, FR-09)",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"score\": 95,\n  \"feedback\": \"Excellent implementation of middleware pipeline and thorough exception handling.\"\n}"
-            }
-          }
-        },
-        {
-          "name": "Update Existing Grade",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{instructorToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/instructor/submissions/{{submissionId}}/grade",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "instructor",
-                "submissions",
-                "{{submissionId}}",
-                "grade"
-              ]
-            },
-            "description": "Update grade and written feedback (FR-08)",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"score\": 98,\n  \"feedback\": \"Updated score after reviewing bonus unit test assertions.\"\n}"
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "13. Instructor Progress Monitoring & At-Risk",
-      "item": [
-        {
-          "name": "View Course Progress Roster",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{instructorToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/instructor/courses/{{courseId}}/progress",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "instructor",
-                "courses",
-                "{{courseId}}",
-                "progress"
-              ]
-            },
-            "description": "View student completion progress (FR-09)"
-          }
-        },
-        {
-          "name": "Identify At-Risk Students",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{instructorToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/instructor/courses/{{courseId}}/at-risk",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "instructor",
-                "courses",
-                "{{courseId}}",
-                "at-risk"
-              ]
-            },
-            "description": "Detect students falling behind with diagnostic reasons (FR-09, FR-44)"
-          }
-        },
-        {
-          "name": "Get Instructor Dashboard Summary",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{instructorToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/instructor/dashboard/summary",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "instructor",
-                "dashboard",
-                "summary"
-              ]
-            },
-            "description": "Summary metrics for instructor dashboard cards (FR-16, FR-44)"
-          }
-        },
-        {
-          "name": "Get Instructor Activity Log",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{instructorToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/instructor/activity",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "instructor",
-                "activity"
-              ]
-            },
-            "description": "Instructor recent activity log (FR-35)"
-          }
-        },
-        {
-          "name": "AI Assignment Formulation Helper",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{instructorToken}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/instructor/ai/assignment-helper",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "instructor",
-                "ai",
-                "assignment-helper"
-              ]
-            },
-            "description": "AI suggestions for assignment prompts and rubrics (FR-20)",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"topic\": \"MongoDB Aggregation Pipeline\",\n  \"courseId\": \"{{courseId}}\",\n  \"difficultyLevel\": \"intermediate\"\n}"
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "14. Shared Notifications & Messaging",
+      "name": "8. Notifications, Messaging & Activity",
       "item": [
         {
           "name": "List Notifications",
@@ -1711,7 +1029,7 @@
                 "notifications"
               ]
             },
-            "description": "List notifications for current user (FR-14, FR-25)"
+            "description": "In-app notifications (FR-14, FR-25)"
           }
         },
         {
@@ -1735,7 +1053,7 @@
                 "unread-count"
               ]
             },
-            "description": "Count unread notifications for badge (FR-25)"
+            "description": "Count for navigation indicator (FR-25, FR-43)"
           }
         },
         {
@@ -1760,7 +1078,7 @@
                 "read"
               ]
             },
-            "description": "Mark single notification as read (FR-25)"
+            "description": "Mark single item read (FR-25)"
           }
         },
         {
@@ -1784,7 +1102,7 @@
                 "read-all"
               ]
             },
-            "description": "Mark all notifications as read (FR-25)"
+            "description": "Mark all read (FR-25)"
           }
         },
         {
@@ -1808,11 +1126,36 @@
                 "conversations"
               ]
             },
-            "description": "List messaging threads with unread counts (FR-33, FR-34)"
+            "description": "Threads with unread counts (FR-34)"
           }
         },
         {
-          "name": "Send Message (ASM-05 Guard)",
+          "name": "View Message History with User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/messages/with/{{partnerUserId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "messages",
+                "with",
+                "{{partnerUserId}}"
+              ]
+            },
+            "description": "Direct exchange with specific user (FR-34)"
+          }
+        },
+        {
+          "name": "Send Message (ASM-05 Rules)",
           "request": {
             "method": "POST",
             "header": [
@@ -1836,11 +1179,88 @@
                 "messages"
               ]
             },
-            "description": "Send message adhering to ASM-05 pairing restrictions (FR-33)",
+            "description": "Send message enforcing ASM-05 allowed pairing (FR-33)",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"recipientId\": \"6732e8f1e4b02a1b9c8d2a10\",\n  \"body\": \"Hello Dr. Jenkins, could you clarify whether the lab requires MongoDB replica sets?\"\n}"
+              "raw": "{\n  \"recipientId\": \"{{partnerUserId}}\",\n  \"body\": \"Hello Dr. Jenkins, could you clarify whether the lab requires MongoDB replica sets?\"\n}"
             }
+          }
+        },
+        {
+          "name": "Recent Activity Stream",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/activity/recent",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "activity",
+                "recent"
+              ]
+            },
+            "description": "Recent chronological activity feed (FR-35, FR-36)"
+          }
+        },
+        {
+          "name": "Weekly Activity Chart Counts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/activity/weekly",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "activity",
+                "weekly"
+              ]
+            },
+            "description": "Weekly activity counts by day of week (FR-37)"
+          }
+        },
+        {
+          "name": "Global Search",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/search?q=MongoDB",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "MongoDB"
+                }
+              ]
+            },
+            "description": "Global search across permitted items (FR-42, ASM-06)"
           }
         }
       ]
