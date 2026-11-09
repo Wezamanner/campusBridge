@@ -1,25 +1,37 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext.jsx';
+import ProtectedRoute from './routes/ProtectedRoute.jsx';
+import LoginPage from './pages/public/LoginPage.jsx';
+import RegisterPage from './pages/public/RegisterPage.jsx';
+import StudentDashboard from './pages/student/StudentDashboard.jsx';
+import InstructorDashboard from './pages/instructor/InstructorDashboard.jsx';
+import CoordinatorDashboard from './pages/coordinator/CoordinatorDashboard.jsx';
+import AdminDashboard from './pages/admin/AdminDashboard.jsx';
+
 import { 
-  Server, 
-  Database, 
+  GraduationCap, 
   ShieldCheck, 
   Activity, 
   Moon, 
   Sun, 
   Users, 
-  GraduationCap, 
   BookOpen, 
   Briefcase, 
   ArrowRight,
-  Sparkles
+  Sparkles,
+  Server,
+  Database,
+  LogIn
 } from 'lucide-react';
 
-export default function App() {
+function LandingPage() {
   const [theme, setTheme] = useState('dark');
   const [health, setHealth] = useState({ loading: true, data: null, error: null });
+  const { user, isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Check backend health
     fetch('/api/v1/health')
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -40,6 +52,17 @@ export default function App() {
   };
 
   const isDark = theme === 'dark';
+
+  const getDashboardPath = () => {
+    if (!user) return '/login';
+    const routes = {
+      student: '/student/dashboard',
+      instructor: '/instructor/dashboard',
+      coordinator: '/coordinator/dashboard',
+      admin: '/admin/dashboard',
+    };
+    return routes[user.role] || '/login';
+  };
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${
@@ -77,37 +100,82 @@ export default function App() {
             {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
 
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#00C8FF]/10 text-[#00C8FF] border border-[#00C8FF]/30">
-            <Sparkles className="w-3.5 h-3.5" />
-            Phase 1 Initialized
-          </span>
+          {isAuthenticated ? (
+            <div className="flex items-center space-x-3">
+              <Link
+                to={getDashboardPath()}
+                className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold bg-[#00C8FF] text-[#101735] hover:opacity-95 shadow-glow-cyan-sm transition-all"
+              >
+                <span>Dashboard ({user?.role})</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+              <button
+                onClick={logout}
+                className="text-xs text-gray-400 hover:text-white px-2 py-1"
+              >
+                Sign Out
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center space-x-2">
+              <Link
+                to="/login"
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-[#8CEBFF] border border-[#1C2948] hover:border-[#00C8FF] transition-all"
+              >
+                Sign In
+              </Link>
+              <Link
+                to="/register"
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-[#00C8FF] to-[#8CEBFF] text-[#101735] hover:opacity-95 shadow-glow-cyan-sm transition-all"
+              >
+                Get Started
+              </Link>
+            </div>
+          )}
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-6xl mx-auto px-6 py-12 space-y-10">
-        {/* Hero Section */}
-        <div className="text-center space-y-4">
+      {/* Hero Section */}
+      <main className="max-w-6xl mx-auto px-6 py-16 space-y-12">
+        <div className="text-center space-y-5">
           <div className="inline-block px-4 py-1.5 rounded-full text-xs font-medium tracking-wide uppercase bg-[#1C2948] text-[#8CEBFF] border border-[#00C8FF]/20 shadow-glow-cyan-sm">
-            Academic Learning & Internship Placement Engine
+            Turning Ideas into Powerful Solutions
           </div>
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">
-            CampusBridge System Architecture
+          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight max-w-3xl mx-auto leading-tight">
+            Connecting University Learning with Real-World Industry
           </h1>
-          <p className="max-w-2xl mx-auto text-sm md:text-base opacity-75">
-            Strictly tailored to Brolf Tech SRS v2.0 & UI Specification. 
-            Clean ES Modules, React + Vite frontend, Express REST API, and MongoDB with Mongoose.
+          <p className="max-w-2xl mx-auto text-sm md:text-base opacity-75 leading-relaxed">
+            CampusBridge unifies academic coursework, student projects, assignment grading, and verified corporate internship placements within a secure role-based ecosystem.
           </p>
+
+          <div className="flex items-center justify-center space-x-4 pt-4">
+            <Link
+              to={isAuthenticated ? getDashboardPath() : '/register'}
+              className="px-6 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-[#00C8FF] to-[#8CEBFF] text-[#101735] hover:opacity-95 shadow-glow-cyan transition-all flex items-center space-x-2"
+            >
+              <span>{isAuthenticated ? 'Open Your Dashboard' : 'Explore Platform'}</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+            {!isAuthenticated && (
+              <Link
+                to="/login"
+                className="px-6 py-3 rounded-xl font-semibold text-sm bg-[#1C2948] text-[#8CEBFF] hover:border-[#00C8FF] border border-[#1C2948] transition-all flex items-center space-x-2"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>Sign In</span>
+              </Link>
+            )}
+          </div>
         </div>
 
-        {/* Live System Diagnostics / Health */}
+        {/* Live System Diagnostics */}
         <div className={`p-6 rounded-2xl border transition-all ${
           isDark ? 'bg-[#1C2948]/40 border-[#1C2948] shadow-lg' : 'bg-white border-gray-200 shadow-sm'
         }`}>
           <div className="flex items-center justify-between pb-4 mb-4 border-b border-inherit">
             <div className="flex items-center space-x-3">
               <Activity className="w-5 h-5 text-[#00C8FF]" />
-              <h2 className="text-base font-bold uppercase tracking-wider">System Health & Live Diagnostics</h2>
+              <h2 className="text-base font-bold uppercase tracking-wider">System Health & Live Status</h2>
             </div>
             <span className={`text-xs px-2.5 py-1 rounded-full font-semibold uppercase ${
               health.loading 
@@ -121,7 +189,6 @@ export default function App() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Express API Status */}
             <div className={`p-4 rounded-xl border flex items-center space-x-4 ${
               isDark ? 'bg-[#101735]/70 border-[#1C2948]' : 'bg-gray-50 border-gray-100'
             }`}>
@@ -136,7 +203,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* MongoDB Status */}
             <div className={`p-4 rounded-xl border flex items-center space-x-4 ${
               isDark ? 'bg-[#101735]/70 border-[#1C2948]' : 'bg-gray-50 border-gray-100'
             }`}>
@@ -151,7 +217,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Security / RBAC */}
             <div className={`p-4 rounded-xl border flex items-center space-x-4 ${
               isDark ? 'bg-[#101735]/70 border-[#1C2948]' : 'bg-gray-50 border-gray-100'
             }`}>
@@ -161,90 +226,154 @@ export default function App() {
               <div>
                 <p className="text-xs uppercase tracking-wider opacity-60">Authentication & RBAC</p>
                 <p className="text-sm font-bold text-indigo-400">
-                  JWT + Bcrypt (4 Roles)
+                  Phase 3 Verified (4 Roles)
                 </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* 4 Multi-Developer Role Modules */}
+        {/* 4 Role Cards */}
         <div className="space-y-4">
-          <h3 className="text-sm font-semibold tracking-wider uppercase text-[#00C8FF]">
-            Multi-Developer Module Matrix (4-Day Team Plan)
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold tracking-wider uppercase text-[#00C8FF]">
+              Role-Based Unified Workspaces
+            </h3>
+            <span className="text-xs opacity-60">Click any role to test protected route guard</span>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Dev 1 & 2: Student */}
-            <div className={`p-5 rounded-2xl border transition-all ${
-              isDark ? 'bg-[#1C2948]/50 border-[#1C2948] hover:border-[#00C8FF]/50' : 'bg-white border-gray-200'
-            }`}>
+            <Link 
+              to="/student/dashboard" 
+              className={`p-5 rounded-2xl border transition-all block ${
+                isDark ? 'bg-[#1C2948]/50 border-[#1C2948] hover:border-[#00C8FF]' : 'bg-white border-gray-200'
+              }`}
+            >
               <div className="flex items-center justify-between mb-3">
                 <GraduationCap className="w-6 h-6 text-[#00C8FF]" />
                 <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-[#00C8FF]/10 text-[#00C8FF]">
-                  Dev 1 & 2
+                  Role 1
                 </span>
               </div>
-              <h4 className="font-bold text-base mb-1">Student Module</h4>
+              <h4 className="font-bold text-base mb-1">Student Area</h4>
               <p className="text-xs opacity-70 leading-relaxed">
-                Courses, assignments, submissions, internship applications, personal projects & tasks, AI assistant.
+                Courses, assignments, submissions, internship applications, personal tasks.
               </p>
-            </div>
+            </Link>
 
-            {/* Dev 1 & 2: Instructor */}
-            <div className={`p-5 rounded-2xl border transition-all ${
-              isDark ? 'bg-[#1C2948]/50 border-[#1C2948] hover:border-[#00C8FF]/50' : 'bg-white border-gray-200'
-            }`}>
+            <Link 
+              to="/instructor/dashboard" 
+              className={`p-5 rounded-2xl border transition-all block ${
+                isDark ? 'bg-[#1C2948]/50 border-[#1C2948] hover:border-[#8CEBFF]' : 'bg-white border-gray-200'
+              }`}
+            >
               <div className="flex items-center justify-between mb-3">
                 <BookOpen className="w-6 h-6 text-[#8CEBFF]" />
                 <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-[#8CEBFF]/10 text-[#8CEBFF]">
-                  Dev 1 & 2
+                  Role 2
                 </span>
               </div>
-              <h4 className="font-bold text-base mb-1">Instructor Module</h4>
+              <h4 className="font-bold text-base mb-1">Instructor Area</h4>
               <p className="text-xs opacity-70 leading-relaxed">
-                Course resources, assignment creation, submission grading queue, at-risk student monitoring.
+                Course resources, assignment creation, grading queue, student progress.
               </p>
-            </div>
+            </Link>
 
-            {/* Dev 3: Coordinator */}
-            <div className={`p-5 rounded-2xl border transition-all ${
-              isDark ? 'bg-[#1C2948]/50 border-[#1C2948] hover:border-[#00C8FF]/50' : 'bg-white border-gray-200'
-            }`}>
+            <Link 
+              to="/coordinator/dashboard" 
+              className={`p-5 rounded-2xl border transition-all block ${
+                isDark ? 'bg-[#1C2948]/50 border-[#1C2948] hover:border-[#00C8FF]' : 'bg-white border-gray-200'
+              }`}
+            >
               <div className="flex items-center justify-between mb-3">
                 <Briefcase className="w-6 h-6 text-[#00C8FF]" />
                 <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-[#00C8FF]/10 text-[#00C8FF]">
-                  Dev 3
+                  Role 3
                 </span>
               </div>
-              <h4 className="font-bold text-base mb-1">Coordinator Module</h4>
+              <h4 className="font-bold text-base mb-1">Coordinator Area</h4>
               <p className="text-xs opacity-70 leading-relaxed">
-                Course creation & instructor assignment, partner companies, internship postings, application reviews.
+                Course creation, instructor assignment, company partnerships, internship matching.
               </p>
-            </div>
+            </Link>
 
-            {/* Dev 4: Administrator */}
-            <div className={`p-5 rounded-2xl border transition-all ${
-              isDark ? 'bg-[#1C2948]/50 border-[#1C2948] hover:border-[#00C8FF]/50' : 'bg-white border-gray-200'
-            }`}>
+            <Link 
+              to="/admin/dashboard" 
+              className={`p-5 rounded-2xl border transition-all block ${
+                isDark ? 'bg-[#1C2948]/50 border-[#1C2948] hover:border-indigo-400' : 'bg-white border-gray-200'
+              }`}
+            >
               <div className="flex items-center justify-between mb-3">
-                <Users className="w-6 h-6 text-[#8CEBFF]" />
-                <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-[#8CEBFF]/10 text-[#8CEBFF]">
-                  Dev 4
+                <Users className="w-6 h-6 text-indigo-400" />
+                <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400">
+                  Role 4
                 </span>
               </div>
-              <h4 className="font-bold text-base mb-1">Administrator Module</h4>
+              <h4 className="font-bold text-base mb-1">Administrator Area</h4>
               <p className="text-xs opacity-70 leading-relaxed">
-                User management, staff accounts, role assignment, platform settings, announcements, public content.
+                Account provisioning, role management, system settings, global announcements.
               </p>
-            </div>
+            </Link>
           </div>
         </div>
 
-        {/* Footer info */}
+        {/* Footer */}
         <div className="text-center pt-8 border-t border-inherit opacity-60 text-xs">
           CampusBridge &copy; 2026 &bull; Brolf Tech Remote Internship Challenge &bull; All Rights Reserved
         </div>
       </main>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+
+          {/* Role-Protected Routes */}
+          <Route
+            path="/student/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <StudentDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/instructor/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={['instructor']}>
+                <InstructorDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/coordinator/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={['coordinator']}>
+                <CoordinatorDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Fallback to home */}
+          <Route path="*" element={<LandingPage />} />
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
