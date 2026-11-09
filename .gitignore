@@ -1,9 +1,24 @@
+# Dependencies
 node_modules/
+*/node_modules/
+
+# Production builds
 dist/
+client/dist/
+
+# Environment variables
 .env
 .env.local
-backend/uploads/*
-!backend/uploads/.gitkeep
+server/.env
+client/.env
+
+# Uploads & Logs
+uploads/*
+server/uploads/*
+!server/uploads/.gitkeep
 coverage/
 *.log
+
+# OS & Editor
 .DS_Store
+.idea/
