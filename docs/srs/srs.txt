@@ -1,0 +1,6495 @@
+CampusBridge: Software Requirements Specification (SRS)
+
+CampusBridge: Software Requirements
+Specification (SRS)
+University Learning and Internship Platform
+Brolf Tech Remote Internship Challenge 2026 · Project 4
+Version 2.0 (updated) · Status: draft for review · Date: 8 November 2026
+
+Table of contents
+1. Introduction
+2. Problem statement
+3. Objectives
+4. Scope
+5. User roles
+6. Platform modules
+7. Functional requirements
+8. Non-functional requirements
+9. Security requirements
+10. User interface requirements
+11. Use cases
+12. System architecture
+13. Database design
+14. Implementation plan
+15. Testing strategy
+16. Assumptions and constraints
+17. Future enhancements
+18. Open issues and items to be clarified
+19. Traceability summary
+
+Page 1 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+1. Introduction
+1.1. Purpose
+This Software Requirements Specification defines the functional, non-functional, data
+and architectural requirements of CampusBridge. It is intended for the project team,
+reviewers at Brolf Tech and anyone who tests or maintains the platform.
+
+1.2. Product overview
+CampusBridge is a web platform that joins university learning and internship placement. It
+has three connected parts that share one design system, one API and one database:
+1. Public website: the entry point for visitors, with navigation to sign in and register.
+2. Authentication gateway: sign-in and student registration.
+3. Role-based dashboards: a workspace for each of the four user roles.
+The public website and the dashboards are one product. They use the same visual
+identity, the same light and dark themes and the same account, so a user moves from the
+public pages into a dashboard without leaving the platform.
+
+1.3. Document conventions and source classification
+Every requirement carries a Source tag, so a reviewer can see where it came from:
+
+Page 2 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+Tag
+
+Meaning
+
+DOC
+
+Documented in the original CampusBridge project
+documentation. These requirements are preserved
+unchanged in meaning.
+
+UI
+
+Identified from the UI reference (the public
+website, the student dashboard in dark mode and
+the student dashboard in light mode) as described
+by the project team.
+
+PROP
+
+A proposed enhancement that is not in the original
+documentation or the UI reference. It needs
+approval before implementation.
+
+ASM
+
+An assumption made to complete a requirement. It
+needs confirmation.
+
+Requirement priority uses M (must have), S (should have) and C (could have).
+Requirement identifiers keep the original numbering: FR-01 to FR-26 are the original
+requirements, and FR-27 onwards are added by this version.
+Important note on the UI reference. The UI-derived requirements in this version are
+based on the description of the UI reference supplied by the project team: search,
+notifications, theme switching, project cards, task lists, recent activity, dashboard
+analytics, quick links, a Help and Support navigation entry and a public website. The three
+screenshots themselves should be checked against sections 7.3 and 10 before the
+requirements are baselined. Anything the description did not state is tagged PROP or
+ASM instead of being treated as confirmed.
+
+1.4. Definitions
+Term
+
+Definition
+
+SRS
+
+Software Requirements Specification
+
+JWT
+
+JSON Web Token, used for stateless
+authentication
+
+RBAC
+
+Role-based access control
+
+ODM
+
+Object-document mapper (Mongoose)
+
+Page 3 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+Term
+
+Definition
+
+CSV
+
+Comma-separated values file
+
+Partner company
+
+An external organization that offers internships. It
+is a record managed by coordinators and is not a
+user role.
+
+2. Problem statement
+University learning and internship placement are managed in separate, mostly manual
+channels:
+Learning materials, assignments and announcements are scattered, so students miss
+deadlines and resources.
+Instructors cannot see student progress across courses without collecting it by hand.
+Internship openings are announced informally, and many students never see them.
+Applications and placement decisions are kept on paper or in spreadsheets, and
+students cannot see their status.
+Nothing connects what a student has learned to the internships that suit them.
+Students also lack one place for planning their own projects and tasks, talking to staff
+and reviewing their recent activity. (UI)
+
+3. Objectives
+General objective (DOC). To design and build a secure, role-based web platform that
+unifies learning management and internship placement for students, instructors,
+coordinators and administrators.
+ID
+
+Specific objective
+
+Source
+
+OBJ-1
+
+Provide authentication and four user roles with
+permission checks on every protected endpoint.
+
+DOC
+
+OBJ-2
+
+Let coordinators create courses and assign
+instructors, instructors add resources and
+assignments, and students enroll, submit work and
+receive grades.
+
+DOC
+
+Page 4 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+ID
+
+Specific objective
+
+Source
+
+OBJ-3
+
+Calculate and display progress per course and
+overall.
+
+DOC
+
+OBJ-4
+
+Let coordinators post internships from partner
+companies and students apply, with the
+application status tracked from submission to
+decision.
+
+DOC
+
+OBJ-5
+
+Provide role-based dashboards, reports,
+achievement badges and a ranking.
+
+DOC
+
+OBJ-6
+
+Send notifications for deadlines, grades and
+application updates.
+
+DOC
+
+OBJ-7
+
+Provide an AI learning assistant for study plans,
+questions and internship matching.
+
+DOC
+
+OBJ-8
+
+Deploy with Docker so the system runs from a
+documented setup.
+
+DOC
+
+OBJ-9
+
+Give users a personal workspace with projects,
+tasks, messages, a recent activity feed and weekly
+activity tracking.
+
+UI
+
+OBJ-10
+
+Provide a public website and consistent navigation,
+search, preferences and theme switching across
+the platform.
+
+UI
+
+4. Scope
+4.1. In scope
+All DOC modules listed in section 6.
+The UI-derived modules: project management, task management, messaging, activity
+history, profile and preferences, quick links and navigation, global search, dashboard
+analytics and the public website.
+A responsive web interface with light and dark themes.
+A RESTful API, a MongoDB database and Docker-based deployment.
+
+Page 5 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+4.2. One coherent platform
+The public website is the front door of the same application, not a separate product:
+One codebase and one design system serve the public pages, the authentication
+pages and the dashboards.
+One theme setting (light or dark) applies everywhere and is remembered for signedin users.
+Public announcements shown on the website come from the same Announcements
+collection that administrators manage from their dashboard.
+Sign-in on the public website leads to the dashboard of the user's role.
+
+4.3. Out of scope
+Live video classes, proctored exams, online payments and tuition management.
+A native mobile application. The responsive web application covers mobile use.
+Integration with the university's student information system.
+Partner companies logging in. They are records, not users.
+
+5. User roles
+The four original roles are preserved.
+Role
+
+Description
+
+Account creation
+
+Source
+
+Student
+
+Learns, submits work, applies
+for internships, plans projects
+and tasks
+
+Self-registration
+
+DOC
+
+Instructor
+
+Adds resources and
+assignments to assigned
+courses, grades work,
+monitors progress
+
+Created by an
+administrator
+
+DOC
+
+Coordinator
+
+Creates courses, assigns
+instructors, manages partner
+companies and internships,
+forwards applications, exports
+reports
+
+Created by an
+administrator
+
+DOC
+
+Page 6 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+Role
+
+Description
+
+Account creation
+
+Source
+
+Administrator
+
+Manages accounts, roles,
+settings, announcements and
+the public website content
+
+Created by an
+administrator
+
+DOC (public
+website content:
+UI)
+
+6. Platform modules
+No.
+
+Module
+
+Source
+
+M1
+
+Authentication and authorization
+
+DOC
+
+M2
+
+Course management and enrollment
+
+DOC
+
+M3
+
+Assignment management and grading
+
+DOC
+
+M4
+
+Internship management
+
+DOC
+
+M5
+
+Internship application workflow
+
+DOC
+
+M6
+
+Student progress tracking, badges and rankings
+
+DOC
+
+M7
+
+Role-based dashboards
+
+DOC
+
+M8
+
+AI learning assistant
+
+DOC
+
+M9
+
+Notifications
+
+DOC
+
+M10
+
+Reports and CSV exports
+
+DOC
+
+M11
+
+Project management
+
+UI
+
+M12
+
+Task management
+
+UI
+
+M13
+
+Messaging management
+
+UI
+
+M14
+
+Activity history and weekly activity tracking
+
+UI
+
+M15
+
+Profile and preferences management
+
+DOC (profile), UI
+(preferences)
+
+M16
+
+Quick links and dashboard navigation, global
+search
+
+UI
+
+M17
+
+Public website management
+
+UI
+
+Page 7 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+No.
+
+Module
+
+Source
+
+M18
+
+Help and support
+
+UI (to be clarified)
+
+7. Functional requirements
+7.1. Conventions
+Each requirement lists its identifier, name, description, responsible actor, preconditions,
+expected system behavior and postconditions. The last column gives the source tag and
+the priority (see 1.3). In every table the actor "All roles" means student, instructor,
+coordinator and administrator.
+
+7.2. Requirements documented in the original documentation (DOC)
+7.2.1. Authentication, authorization and accounts (M1)
+ID
+
+Name
+
+Description
+
+Actor
+
+Preconditions
+
+Expected system
+behavior
+
+Postconditions
+
+Source
+
+FR-01
+
+Registration
+and sign-in
+
+Students
+register
+
+Student
+(register); all
+
+Registration is
+open. The
+
+Validates input,
+stores a bcrypt
+
+A student
+account exists,
+
+DOC ·
+M
+
+themselves. All
+users sign in
+with email and
+password.
+Passwords are
+
+roles (sign in)
+
+email is
+unused. The
+account is
+active.
+
+hash, and on
+sign-in verifies
+the hash and
+returns a signed
+token with an
+
+or an
+authenticated
+session is
+active.
+
+hashed and
+sessions use
+JWT.
+
+expiry plus the
+user and role.
+Wrong
+credentials give
+one generic error.
+Repeated
+failures are rate
+limited.
+
+FR-02
+
+Role-based
+access control
+
+Every page and
+endpoint is
+restricted by
+role and
+ownership.
+
+All roles
+
+The user is
+authenticated.
+
+Checks the role
+and ownership
+on every request.
+Returns 401
+
+Unauthorized
+access is
+refused.
+
+DOC ·
+M
+
+when
+unauthenticated
+and 403 when
+the role is not
+allowed. The
+client sends the
+user to their own
+dashboard.
+
+Page 8 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+ID
+
+Name
+
+Description
+
+Actor
+
+Preconditions
+
+Expected system
+behavior
+
+Postconditions
+
+Source
+
+FR-03
+
+Profile
+
+Users view and
+
+All roles
+
+Signed in.
+
+Validates the
+
+The profile is
+
+DOC ·
+
+input, saves it
+and confirms.
+
+updated.
+
+M
+
+Validates the
+input, enforces
+unique emails,
+applies the
+change, and
+blocks sign-in for
+
+The account
+state or role is
+updated and
+recorded in the
+activity log.
+
+DOC ·
+M
+
+Skills and CV
+are saved and
+used for
+matching.
+
+DOC ·
+M
+
+edit their
+profile
+(students:
+program, year;
+instructors:
+department).
+FR-22
+
+User and role
+administration
+
+Administrators
+create
+instructor and
+coordinator
+accounts,
+change roles,
+
+Administrator
+
+Signed in as
+administrator.
+
+and deactivate
+or reactivate
+accounts. They
+cannot change
+or deactivate
+their own
+
+deactivated
+users.
+
+account.
+FR-23
+
+Student skills
+and CV
+
+Students
+maintain skills
+and upload one
+CV (PDF or
+Word, up to 2
+
+Student
+
+Signed in as
+student.
+
+MB). The skills
+feed the
+internship
+matching.
+FR-24
+
+Registration
+
+Administrators
+
+setting and
+announcement
+
+switch student
+selfregistration on
+or off and
+publish an
+announcement
+shown on every
+dashboard.
+
+Validates skills (2
+to 30 characters,
+no duplicates)
+and the file type
+and size, stores
+the file and
+updates the
+profile.
+
+Administrator
+
+Signed in as
+
+Saves the
+
+The settings
+
+DOC ·
+
+administrator.
+
+settings. When
+registration is off,
+the registration
+page shows a
+closed message.
+Shows the
+
+are active.
+
+S
+
+announcement
+at the top of
+every dashboard.
+
+Page 9 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+7.2.2. Course management, enrollment, assignments and grading (M2, M3)
+ID
+
+Name
+
+Description
+
+Actor
+
+Preconditions
+
+Expected
+system
+
+Postconditions
+
+Source
+
+The course exists
+with its
+instructor and
+resources.
+
+DOC ·
+M
+
+The student is
+enrolled.
+
+DOC ·
+M
+
+The assignment
+is visible to
+enrolled
+students.
+
+DOC ·
+M
+
+A submission is
+stored and
+progress is
+updated.
+
+DOC ·
+M
+
+behavior
+FR-04
+
+Course
+creation and
+instructor
+assignment
+
+Coordinators
+create and
+archive courses
+and assign an
+instructor to
+
+Coordinator;
+Instructor
+(resources)
+
+Signed in. The
+instructor
+account exists.
+
+each. The
+assigned
+instructor
+uploads
+learning
+resources.
+FR-05
+
+Enrollment
+and
+resources
+
+Students
+browse
+courses, enroll
+and open
+resources.
+
+Validates a
+unique course
+code, links the
+instructor, and
+lets only that
+instructor add
+resources.
+
+Student
+
+Signed in as
+student. The
+course is active.
+
+Prevents
+duplicate
+enrollment.
+Shows
+resources and
+assignments
+only after
+enrollment.
+
+FR-06
+
+Assignment
+creation
+
+The assigned
+instructor
+creates
+assignments
+
+Instructor
+
+The instructor is
+assigned to the
+course.
+
+with
+instructions, a
+deadline, a
+maximum score
+and a late-
+
+Validates the
+fields and a
+future
+deadline,
+stores the
+assignment
+and notifies
+enrolled
+students.
+
+submission
+setting.
+FR-07
+
+Assignment
+submission
+
+Students
+submit text or a
+file (PDF, Word,
+ZIP or text, up
+
+Student
+
+to 5 MB) before
+the deadline
+and may
+replace it until
+then.
+FR-08
+
+Grading and
+
+Instructors give
+
+feedback
+
+a score
+between 0 and
+the maximum
+and written
+feedback.
+
+Instructor
+
+Enrolled. The
+deadline has not
+passed (or late
+work is allowed).
+
+Validates the
+content, stores
+the
+submission,
+
+The work is not
+yet graded.
+
+replaces the
+earlier one, and
+notifies the
+instructor.
+
+The submission
+
+Validates the
+
+The submission is
+
+DOC ·
+
+belongs to the
+instructor's
+course.
+
+score, saves
+score and
+feedback, locks
+the submission
+and notifies
+the student.
+
+graded.
+
+M
+
+Page 10 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+ID
+
+Name
+
+Description
+
+Actor
+
+Preconditions
+
+Expected
+system
+behavior
+
+Postconditions
+
+Source
+
+FR-09
+
+Progress
+calculation
+
+The system
+calculates
+progress per
+course and
+overall from
+submitted
+
+System
+
+The student is
+enrolled.
+
+Recalculates
+after each
+submission and
+shows the
+result on the
+student and
+
+Current progress
+is available.
+
+DOC ·
+M
+
+Expected
+system
+behavior
+
+Postconditions
+
+Source
+
+work.
+
+instructor
+views.
+
+7.2.3. Internships and applications (M4, M5)
+ID
+
+Name
+
+Description
+
+Actor
+
+FR-10
+
+Internship
+posting
+
+Coordinators
+post, edit and
+close
+internships
+on behalf of
+partner
+companies.
+
+Coordinator Signed in as
+coordinator.
+The company
+is registered.
+
+Validates
+the fields
+and a future
+deadline,
+links the
+company
+and the
+creator, and
+shows open
+postings to
+students.
+
+The internship
+is open,
+updated or
+closed.
+
+DOC ·
+M
+
+FR-11
+
+Search,
+apply and
+withdraw
+
+Students
+search and
+filter
+internships
+(text, work
+mode), apply
+
+Student
+
+Blocks
+duplicate
+applications
+and closed
+postings,
+stores the
+
+The
+application
+exists and is
+trackable.
+
+DOC ·
+M
+
+with a
+message and
+a CV, and
+may
+withdraw.
+
+Preconditions
+
+Signed in as
+student. The
+internship is
+open.
+
+application
+as
+Submitted,
+and notifies
+the
+coordinator.
+Allows
+withdrawal
+before the
+final
+decision.
+
+Page 11 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+ID
+
+Name
+
+Description
+
+Actor
+
+Preconditions
+
+FR-12
+
+Review,
+forward
+and record
+the
+decision
+
+Coordinators
+review
+applications,
+forward them
+to the
+partner
+company and
+record the
+company's
+decision.
+Allowed
+status order:
+Submitted,
+
+Coordinator The
+application is
+in an allowed
+state.
+
+Under
+review,
+Forwarded,
+then
+Accepted or
+Rejected.
+FR-13
+
+Partner
+companies
+
+Coordinators
+register and
+update
+partner
+companies
+and view all
+internships
+and
+applications.
+
+Expected
+system
+behavior
+
+Postconditions
+
+Source
+
+Rejects any
+move
+outside the
+allowed
+order, sends
+the
+applicant
+details to
+the
+company's
+contact on
+forwarding,
+and notifies
+
+The status is
+updated and
+recorded.
+
+DOC ·
+M
+
+The company
+record exists.
+
+DOC ·
+M
+
+the student
+of each
+change.
+
+Coordinator Signed in as
+coordinator.
+
+Enforces a
+unique
+company
+name and
+stores the
+contact
+details.
+
+Page 12 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+7.2.4. Progress, dashboards, AI assistant, notifications and reports (M6 to M10)
+ID
+
+Name
+
+Description
+
+Actor
+
+Preconditions
+
+Expected
+system
+
+Postconditions
+
+Source
+
+The dashboard
+shows current
+data.
+
+DOC ·
+M
+
+Badges and rank
+are current.
+
+DOC ·
+S
+
+A plan is shown.
+
+DOC ·
+M
+
+An answer or
+refusal is shown.
+
+DOC ·
+S
+
+behavior
+FR-16
+
+Role-based
+dashboards
+
+Each role sees a
+dashboard built
+from live data:
+students
+(progress,
+
+All roles
+
+Signed in.
+
+deadlines,
+courses,
+recommended
+internships),
+instructors
+(grading queue,
+
+Loads the
+figures for the
+user's role from
+the API and
+shows loading
+and empty
+states.
+
+at-risk students,
+courses),
+coordinators
+(applications,
+internships,
+courses),
+administrators
+(accounts by
+role).
+FR-17
+
+Badges and
+ranking
+
+The system
+awards badges
+for milestones
+
+System;
+Student
+
+Graded work
+exists.
+
+and ranks
+students by
+average
+submission
+score.
+
+Evaluates
+badge rules
+after relevant
+events and
+shows badges
+and a ranking
+with first
+names and
+initials only.
+
+FR-19
+
+AI study plan
+
+The assistant
+builds a day-byday plan from the
+student's
+courses,
+
+Student
+
+Signed in.
+Pending
+assignments
+exist.
+
+deadlines and
+available hours.
+FR-20
+
+AI question
+answering
+
+The assistant
+answers
+questions about
+courses, the
+platform and
+internships.
+
+Sends the
+minimum data
+to the language
+model, restricts
+the output to
+study planning
+and shows the
+plan.
+
+Student
+
+Signed in.
+
+Refuses offtopic requests
+and requests to
+change grades
+or data, and
+never alters
+records.
+
+Page 13 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+ID
+
+Name
+
+Description
+
+Actor
+
+Preconditions
+
+Expected
+system
+behavior
+
+Postconditions
+
+Source
+
+FR-21
+
+AI internship
+matching
+
+The assistant
+ranks open
+internships by
+overlap with the
+student's skills
+and shows
+
+Student
+
+The profile has
+skills.
+
+Ranks by rules
+first and uses
+the model only
+to explain.
+
+Ranked matches
+are shown.
+
+DOC ·
+S
+
+System
+
+A triggering
+event occurred.
+
+Creates a
+notification for
+the right user
+with a link to
+
+The notification
+is stored.
+
+DOC ·
+M
+
+The email is
+queued or sent.
+
+DOC ·
+S
+
+Read state is
+saved.
+
+DOC ·
+S
+
+A CSV file is
+produced.
+
+DOC ·
+S
+
+A CSV file is
+produced.
+
+DOC ·
+S
+
+matched and
+missing skills.
+FR-14
+
+In-app
+notifications
+
+Users are
+notified of
+deadlines,
+grades,
+application
+updates, new
+submissions and
+new applications.
+
+FR-15
+
+Email
+notifications
+
+Key events are
+also sent by
+
+the item.
+
+System
+
+The user has an
+email address.
+
+email.
+FR-25
+
+Notification
+center
+
+Every user has a
+notification page
+with an unread
+count and can
+
+shows a notice
+if sending fails.
+All roles
+
+Signed in.
+
+mark items read.
+FR-18
+
+CSV reports
+
+Coordinators and
+administrators
+export
+
+Company
+hand-off list
+
+Coordinators
+export the
+forwarded
+applicants of one
+internship as a
+CSV list for the
+company.
+
+Shows newest
+first, an unread
+count in the
+navigation, and
+marks one or all
+as read.
+
+Coordinator;
+Administrator
+
+Signed in with
+the right role.
+
+applications,
+student progress
+and user lists as
+CSV.
+FR-26
+
+Sends the
+message and
+
+Builds the file,
+escapes
+spreadsheet
+formulas and
+downloads it.
+
+Coordinator
+
+At least one
+application is
+
+Includes
+company,
+
+Forwarded.
+
+contact email,
+student, CV file
+name, message
+and date.
+
+7.3. Requirements identified from the UI reference (UI)
+These requirements come from the UI reference. Where a detail was not stated, it is
+marked ASM and listed again in section 16.
+
+Page 14 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+7.3.1. Project management (M11)
+ID
+
+Name
+
+Description
+
+Actor
+
+FR27
+
+Create
+project
+
+Students
+create
+personal
+projects with
+a name,
+description,
+status and
+
+Preconditions
+
+Expected
+system
+behavior
+
+Postconditions
+
+Source
+
+Student Signed in as
+student.
+
+Validates the
+fields and
+stores the
+project with
+its owner.
+
+The project
+exists and
+appears on the
+dashboard.
+
+UI · M
+
+optional due
+date (fields:
+ASM).
+FR28
+
+Project
+cards and
+progress
+
+The
+dashboard
+shows project
+cards with
+name, status
+and progress.
+Progress is
+the share of
+completed
+tasks of the
+project
+(calculation:
+ASM).
+
+Student At least one
+project exists.
+
+Loads the
+owner's
+projects and
+shows each as
+a card, with an
+empty state
+when there
+are none.
+
+The cards show
+current data.
+
+UI · M
+
+FR29
+
+Edit,
+archive
+and
+delete
+project
+
+The owner
+edits,
+archives or
+deletes a
+project.
+
+Student The user owns
+the project.
+
+Asks for
+confirmation
+before
+deleting, and
+keeps
+archived
+projects out of
+the main list.
+
+The project is
+changed,
+archived or
+removed
+together with its
+tasks.
+
+UI · S
+
+Page 15 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+7.3.2. Task management (M12)
+ID
+
+Name
+
+Description
+
+Actor
+
+FR30
+
+Create
+task
+
+Students
+create tasks
+with a title,
+due date and
+priority,
+optionally
+inside a
+
+Preconditions
+
+Expected
+system
+behavior
+
+Postconditions
+
+Source
+
+Student Signed in as
+student.
+
+Validates the
+fields and
+stores the task
+with its owner
+and project.
+
+The task
+appears in the
+task list.
+
+UI · M
+
+project
+(priority
+levels: ASM).
+FR-31
+
+Task list
+
+The
+dashboard
+shows a task
+list with
+status, due
+date and
+priority,
+filtered by
+status or
+project
+(filters: ASM).
+
+Student Signed in as
+student.
+
+Shows open
+tasks first,
+overdue tasks
+marked, and
+an empty state
+when there
+are none.
+
+The list is
+current.
+
+UI · M
+
+FR32
+
+Update
+and
+complete
+task
+
+The owner
+edits a task,
+marks it done
+or reopens it,
+and deletes it.
+
+Student The user owns
+the task.
+
+Saves the
+change,
+recalculates
+the project
+progress and
+records the
+action in the
+activity log.
+
+The task status
+is updated.
+
+UI · M
+
+Page 16 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+7.3.3. Messaging management (M13)
+ID
+
+Name
+
+Description
+
+Actor
+
+Preconditions
+
+Expected
+system
+behavior
+
+Postconditions
+
+Source
+
+FR33
+
+Send
+message
+
+A user sends a
+text message
+to another
+permitted
+user.
+Permitted
+pairs: student
+
+All
+roles
+
+Signed in. The
+recipient is
+permitted and
+active.
+
+Validates the
+length, stores
+the message
+in a
+conversation
+and notifies
+the recipient.
+
+The message is
+stored and
+delivered.
+
+UI · S
+
+All
+roles
+
+Signed in.
+
+Orders
+conversations
+by latest
+message,
+marks
+messages
+read when
+opened and
+updates the
+unread count.
+
+Read state is
+saved.
+
+UI · S
+
+with
+instructor or
+coordinator,
+and staff with
+any user
+(ASM).
+FR34
+
+Inbox and
+conversations
+
+Users see a
+list of
+conversations
+with the latest
+message and
+an unread
+count, and
+open a
+conversation
+to read and
+reply.
+
+Page 17 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+7.3.4. Activity history and weekly activity tracking (M14)
+ID
+
+Name
+
+Description
+
+Actor
+
+Preconditions
+
+Expected
+system
+behavior
+
+Postconditions
+
+Source
+
+FR35
+
+Activity
+logging
+
+The system
+records
+meaningful
+user actions
+(for example
+submitting
+work,
+
+System
+
+A user
+performs a
+logged action.
+
+Writes one
+entry with
+the user,
+action, target
+and time,
+without
+storing
+
+The activity is
+available for
+history and
+charts.
+
+UI · M
+
+completing a
+task, applying)
+with the time.
+
+sensitive
+content.
+
+FR36
+
+Recent
+activity
+feed
+
+The dashboard
+shows the
+user's most
+recent
+activities,
+newest first.
+
+All
+roles
+
+Signed in.
+
+Loads the
+latest entries
+(number:
+ASM) with a
+link to each
+item.
+
+The feed is
+current.
+
+UI · M
+
+FR37
+
+Weekly
+activity
+tracking
+
+The dashboard
+shows the
+user's activity
+per day of the
+current week
+as a chart.
+
+All
+roles
+
+Signed in.
+
+Counts the
+user's logged
+activities per
+day and
+draws the
+chart with a
+text
+equivalent for
+screen
+readers.
+
+The weekly chart
+is current.
+
+UI · S
+
+Page 18 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+7.3.5. Profile, preferences, theme, navigation and search (M15, M16)
+ID
+
+Name
+
+Description
+
+Actor
+
+Preconditions
+
+Expected
+system
+behavior
+
+Postconditions
+
+Source
+
+FR38
+
+Profile and
+preferences
+page
+
+One page holds
+the user's
+profile (FR-03,
+FR-23) and
+preferences
+such as the
+theme.
+
+All
+roles
+
+Signed in.
+
+Loads the
+stored
+values, saves
+changes and
+confirms.
+
+Profile and
+preferences
+are saved.
+
+UI · M
+
+FR39
+
+Theme
+switching
+
+Users switch
+All
+between light
+roles;
+and dark
+visitors
+themes on the
+public website
+and in the
+dashboards. The
+choice is
+remembered,
+and for signedin users it is
+stored with the
+account (initial
+default from the
+system setting:
+ASM).
+
+None for
+visitors.
+
+Applies the
+theme
+without a
+reload, keeps
+text
+readable in
+both, and
+restores the
+choice on
+the next
+visit.
+
+The theme
+preference is
+stored.
+
+UI · M
+
+FR40
+
+Role-based
+navigation
+
+A sidebar shows
+only the pages
+of the user's
+role and marks
+the current
+page. It
+collapses into a
+menu on small
+screens.
+
+Signed in.
+
+Builds the
+navigation
+from the role
+and shows
+the unread
+notification
+count.
+
+The user can
+reach every
+allowed page.
+
+UI · M
+
+All
+roles
+
+Page 19 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+ID
+
+Name
+
+Description
+
+Actor
+
+Preconditions
+
+Expected
+system
+behavior
+
+Postconditions
+
+Source
+
+FR-41
+
+Quick links
+
+The dashboard
+shows quick
+links to the most
+frequent
+actions of the
+role.
+
+All
+roles
+
+Signed in.
+
+Shows links
+to allowed
+actions only
+(for example
+submit work,
+find
+internships,
+create a
+task).
+
+The user
+reaches the
+action in one
+click.
+
+UI · S
+
+FR42
+
+Global
+search
+
+A search box in
+the header finds
+items the user
+may see (scope:
+
+All
+roles
+
+Signed in.
+
+Applies the
+user's
+permissions
+to the
+
+Results are
+shown.
+
+UI · S
+
+courses,
+internships,
+projects, tasks,
+messages:
+ASM).
+
+results,
+groups them
+by type and
+shows a noresults
+message.
+
+FR43
+
+Notification
+indicator
+
+The header
+shows an icon
+with the unread
+count that
+opens the
+notification
+center (FR-25).
+
+All
+roles
+
+Signed in.
+
+Updates the
+count after
+events and
+when
+notifications
+are read.
+
+The count is
+accurate.
+
+UI · M
+
+FR44
+
+Dashboard
+analytics
+
+Dashboards
+show summary
+cards and
+charts
+(progress,
+tasks, weekly
+activity for
+students;
+grading and risk
+figures for
+instructors;
+application
+stages for
+coordinators;
+users by role for
+administrators).
+
+All
+roles
+
+Signed in.
+
+Computes
+the figures
+from stored
+data, shows
+a text
+alternative
+for each
+chart and
+handles
+empty data.
+
+The analytics
+are current.
+
+UI · M
+
+Page 20 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+7.3.6. Public website management (M17)
+ID
+
+Name
+
+Description
+
+Actor
+
+Preconditions
+
+Expected system
+behavior
+
+Postconditions
+
+Source
+
+FR-45
+
+Public landing
+
+Visitors see a
+
+Visitor
+
+None.
+
+Loads without
+
+The visitor can
+
+UI · M
+
+page
+
+landing page
+that explains
+CampusBridge
+and links to
+sign in and
+register. It uses
+
+signing in, shows
+the registration
+link only when
+registration is on
+(FR-24), and
+redirects signed-
+
+enter the
+platform.
+
+the same
+identity and
+themes as the
+dashboards.
+
+in users to their
+dashboard when
+they choose Sign
+in.
+
+FR-46
+
+Public
+announcements
+
+The public
+website shows
+
+Visitor
+
+the current
+announcement
+published by an
+administrator
+(FR-24, FR-47).
+FR-47
+
+Manage public
+
+Administrators
+
+content
+
+edit the
+announcement
+and the public
+page text
+blocks (which
+blocks are
+
+Administrator
+
+An
+announcement
+
+Reads from the
+Announcements
+
+The
+announcement
+
+is published.
+
+collection and
+hides expired
+items.
+
+is shown.
+
+Signed in as
+
+Validates and
+
+The public
+
+administrator.
+
+stores the
+content, with a
+preview before
+publishing.
+
+website shows
+the new
+content.
+
+UI · S
+
+UI · S
+
+editable: ASM).
+
+7.4. Proposed enhancements (PROP)
+These are not in the original documentation or the UI reference. They need approval
+before they are built.
+ID
+
+Name
+
+Description
+
+Actor
+
+Preconditions
+
+Expected
+
+Postconditions
+
+Source
+
+The password is
+changed.
+
+PROP ·
+S
+
+Preferences are
+active.
+
+PROP ·
+C
+
+system behavior
+FR-48
+
+Password
+reset
+
+Users reset a
+forgotten
+password by
+email.
+
+All roles
+
+The account
+exists.
+
+Sends a singleuse link that
+expires and
+stores only the
+new hash.
+
+FR-49
+
+Notification
+preferences
+
+Users choose
+which notification
+types also arrive
+by email.
+
+All roles
+
+Signed in.
+
+Stores the
+choices and
+applies them
+when sending.
+
+Page 21 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+ID
+
+Name
+
+Description
+
+Actor
+
+Preconditions
+
+Expected
+system behavior
+
+Postconditions
+
+Source
+
+FR-50
+
+Staff
+
+Instructors and
+
+Instructor;
+
+Signed in.
+
+Reuses the
+
+Staff can plan
+
+PROP ·
+
+workspaces
+
+coordinators can
+also keep projects
+and tasks.
+
+Coordinator
+
+project and task
+features for
+these roles.
+
+their own work.
+
+C
+
+Activity
+export
+
+Administrators
+export the activity
+log as CSV for
+
+Administrator
+
+Filters by date
+and user and
+escapes
+
+A CSV file is
+produced.
+
+PROP ·
+C
+
+FR-51
+
+audits.
+
+Signed in.
+
+spreadsheet
+formulas.
+
+7.5. Help and Support (to be clarified)
+A Help and Support entry appears in the dashboard navigation, but the UI reference does
+not show what it contains. It is therefore recorded as a requirement to be clarified, FR-52
+(Help and Support, M18, source UI, priority S). Until the team decides, the navigation
+entry is reserved and no behavior is assumed.
+Option
+
+What it would contain
+
+Effort
+
+A
+
+A static help page with frequently asked questions
+and short guides per role
+
+Low
+
+B
+
+Option A plus a contact form that stores a support
+request and notifies the administrator
+
+Medium
+
+C
+
+Option A plus a link to the administrator's contact
+address
+
+Low
+
+Questions for the team: which option is wanted, who answers support requests, and
+whether the public website also needs a contact entry (FR-45).
+
+8. Non-functional requirements
+Values marked ASM are proposed targets that the team should confirm.
+
+Page 22 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+ID
+
+Category
+
+Requirement
+
+Verification
+
+Source
+
+NFR01
+
+Security
+
+Passwords are stored
+only as bcrypt hashes.
+Authentication uses
+signed JWTs with an
+expiry. Authorization is
+checked on the server
+for every request.
+
+Code review and API
+tests with the wrong
+role
+
+DOC
+
+NFR02
+
+Security
+
+Inputs are validated on
+the server, output is
+escaped, and login and
+AI endpoints are rate
+limited.
+
+Automated tests and
+manual injection
+checks
+
+DOC
+
+NFR03
+
+Performance
+
+Typical API calls
+complete in under 500
+ms. Pages load in under
+3 s on a standard mobile
+connection. AI replies
+appear in under 10 s.
+
+Measured in the
+browser and with
+Postman
+
+DOC
+
+NFR04
+
+Performance
+
+Lists are paginated, and
+queries on large
+collections use indexes
+(section 13).
+
+Query plans checked
+
+PROP
+
+NFR05
+
+Scalability
+
+The API is stateless so
+that several instances
+can run behind a load
+balancer. File storage
+and the database are
+separate services.
+
+Architecture review
+
+PROP
+
+Page 23 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+ID
+
+Category
+
+Requirement
+
+Verification
+
+Source
+
+NFR06
+
+Scalability
+
+The design supports
+one university
+department at first. The
+target load (for example
+500 registered users
+and 50 concurrent
+users) is to be
+confirmed.
+
+Load test against the
+target
+
+ASM
+
+NFR07
+
+Reliability
+
+The API exposes a
+health endpoint
+reporting the API and
+database status.
+Failures of email or the
+AI service show a clear
+message and do not
+stop the rest of the
+system.
+
+Fault tests with the
+services switched
+off
+
+DOC
+
+NFR08
+
+Reliability
+
+Multi-document
+changes that must stay
+consistent use
+database transactions
+(section 13.4).
+
+Integration tests
+
+PROP
+
+NFR09
+
+Usability
+
+A new student can
+enroll and submit a first
+assignment without
+instructions. Forms
+show errors next to the
+field.
+
+Usability test with
+first-time users
+
+DOC
+
+NFR10
+
+Usability
+
+Destructive actions ask
+for confirmation, and
+successful actions
+show a short
+confirmation message.
+
+Manual test cases
+
+UI
+
+Page 24 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+ID
+
+Category
+
+Requirement
+
+Verification
+
+Source
+
+NFR11
+
+Accessibility
+
+The interface supports
+keyboard navigation,
+visible focus, labeled
+form fields, a skip link,
+sufficient contrast in
+both themes and text
+alternatives for charts.
+The target is WCAG 2.1
+level AA.
+
+Keyboard-only test
+and a contrast check
+
+DOC
+(target
+level: ASM)
+
+NFR12
+
+Maintainability
+
+Code follows a layered
+structure (routes,
+controllers, services,
+data access), is linted
+and typed (TypeScript),
+and the API is
+documented.
+
+Lint and type checks
+in CI
+
+DOC
+
+NFR13
+
+Maintainability
+
+Work is tracked in Git
+with meaningful
+commits and reviewed
+pull requests.
+
+Repository history
+
+DOC
+
+NFR14
+
+Responsiveness
+
+The interface works
+from 360 px phone
+screens to wide
+desktops in light and
+dark themes. Wide
+tables scroll inside their
+own container.
+
+Checks at 360, 768
+and 1280 px
+
+DOC
+
+NFR15
+
+Data integrity
+
+Unique constraints
+prevent duplicate
+emails, enrollments,
+applications and
+submissions. Schema
+validation rejects invalid
+documents.
+
+Database and API
+tests
+
+DOC
+
+Page 25 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+ID
+
+Category
+
+Requirement
+
+Verification
+
+Source
+
+NFR16
+
+Backup and
+recovery
+
+The database is backed
+up daily, and a restore
+procedure is
+documented and
+tested.
+
+A restore drill
+
+DOC
+
+NFR17
+
+Portability
+
+The whole system
+starts from a
+documented Docker
+setup.
+
+A clean-machine
+start
+
+DOC
+
+9. Security requirements
+ID
+
+Requirement
+
+Source
+
+SEC-01
+
+Hash passwords with bcrypt using a per-password
+salt. Never log or return a hash.
+
+DOC
+
+SEC-02
+
+Issue JWTs with a short expiry and verify the
+signature and expiry on every request. The storage
+method on the client (memory or an HTTP-only
+cookie) is to be decided.
+
+DOC (storage: ASM)
+
+SEC-03
+
+Compare password hashes in a way that does not
+reveal whether an email exists (equal timing and
+one generic error).
+
+DOC
+
+SEC-04
+
+Apply role checks and ownership checks on the
+server. Instructors reach only their own courses,
+students only their own data.
+
+DOC
+
+SEC-05
+
+Rate limit sign-in, registration and AI endpoints.
+
+DOC
+
+SEC-06
+
+Validate every request body, query and parameter
+against a schema. Remove keys that begin with $
+or contain a dot to block NoSQL operator injection.
+
+PROP
+
+Page 26 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+ID
+
+Requirement
+
+Source
+
+SEC-07
+
+Accept uploads only by type (PDF, Word, ZIP, text)
+and size (2 MB for CVs, 5 MB for submissions).
+Store files outside the web root and serve them
+only to authorized users.
+
+DOC
+
+SEC-08
+
+Allow only the frontend origins in CORS, serve
+everything over HTTPS and set standard security
+headers.
+
+PROP
+
+SEC-09
+
+Keep secrets (database address, JWT secret, AI
+key) in environment variables and never in the
+repository or the frontend.
+
+DOC
+
+SEC-10
+
+Send the AI model only the minimum data needed,
+restrict it to learning and internship topics, and
+never let it change records.
+
+DOC
+
+SEC-11
+
+Escape cells that start with = , + , - or @ in CSV
+exports.
+
+DOC
+
+SEC-12
+
+Record sign-ins, role changes, deactivations and
+status changes in the activity log.
+
+UI
+
+SEC-13
+
+Messages are visible only to their participants.
+
+UI
+
+10. User interface requirements
+ID
+
+Requirement
+
+Source
+
+UIR-01
+
+The public website, the authentication pages and
+the dashboards share one design system: colors,
+type, spacing and components.
+
+UI
+
+UIR-02
+
+The public website has a header with the product
+name, navigation, a theme switch, and Sign in and
+Register actions.
+
+UI
+
+UIR-03
+
+Light and dark themes are available everywhere
+and both meet the contrast requirement.
+
+UI
+
+Page 27 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+ID
+
+Requirement
+
+Source
+
+UIR-04
+
+The dashboard has a left sidebar with the role's
+pages, a Help and Support entry and the unread
+notification count. On small screens it becomes a
+slide-in menu.
+
+UI
+
+UIR-05
+
+The dashboard header holds the global search, the
+notification indicator, the theme switch and the
+profile menu.
+
+UI
+
+UIR-06
+
+The student dashboard shows analytics cards,
+project cards, a task list, a recent activity feed, a
+weekly activity chart and quick links.
+
+UI
+
+UIR-07
+
+The instructor, coordinator and administrator
+dashboards use the same layout with the cards
+and lists of their role (FR-16, FR-44).
+
+DOC
+
+UIR-08
+
+Every list has loading, empty and error states.
+Charts have a text alternative.
+
+UI
+
+UIR-09
+
+Forms validate input with messages next to the
+field, and destructive actions use a confirmation
+dialog. Success messages appear as short toasts.
+
+UI
+
+UIR-10
+
+The layout works from 360 px to wide desktops,
+and interactive targets are at least 44 px high.
+
+DOC
+
+11. Use cases
+This section specifies the use cases of the four actors. The diagram shows the rolespecific use cases. Seven common use cases (UC-G01 to UC-G07) are shared by all actors
+and listed first. Requirement references are in brackets.
+
+Page 28 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+use case diagram · 4 actors, 23 role-specific use cases
+
+Page 29 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+11.1. Common use cases (all actors)
+ID
+
+Name
+
+Primary
+
+Preconditions
+
+Main flow
+
+Alternative flow
+
+Postconditions
+
+actor
+UCG01
+
+Sign in (FR-01,
+FR-02)
+
+All roles
+
+The account is
+active.
+
+1. Open the
+public website
+and choose
+Sign in. 2.
+Enter email
+and password.
+3. The system
+verifies them
+and issues a
+token. 4. The
+system opens
+the dashboard
+of the user's
+role.
+
+Wrong
+credentials: one
+generic error.
+Too many
+attempts: rate
+limited.
+Deactivated
+account:
+refused with a
+message.
+
+The user is
+authenticated on
+their dashboard.
+
+UCG02
+
+Manage profile
+and
+preferences
+(FR-03, FR-38,
+FR-39)
+
+All roles
+
+Signed in.
+
+1. Open the
+profile page. 2.
+Edit details or
+switch the
+theme. 3. Save.
+
+Invalid data:
+errors appear
+next to the
+fields.
+
+Profile and
+preferences are
+saved.
+
+UCG03
+
+View
+notifications
+(FR-14, FR-25,
+FR-43)
+
+All roles
+
+Signed in.
+
+1. See the
+unread count
+in the header.
+2. Open the
+notification
+center. 3. Open
+an item or
+mark it read.
+
+No notifications:
+an empty state
+is shown.
+
+Read state is
+saved and the
+count is updated.
+
+UCG04
+
+Search and
+navigate (FR-40
+to FR-42)
+
+All roles
+
+Signed in.
+
+1. Type in the
+search box. 2.
+The system
+shows
+
+No results: a
+message is
+shown.
+
+The user reaches
+the item.
+
+permitted
+results
+grouped by
+type. 3. Open a
+result or a
+quick link.
+
+Page 30 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+ID
+
+Name
+
+Primary
+actor
+
+Preconditions
+
+Main flow
+
+Alternative flow
+
+Postconditions
+
+UCG05
+
+Send and read
+messages (FR33, FR-34)
+
+All roles
+
+Signed in.
+
+1. Open
+Messages. 2.
+Choose a
+permitted
+recipient. 3.
+Write and
+send. 4. The
+recipient is
+notified.
+
+Recipient not
+permitted or
+inactive:
+refused.
+
+The message is
+stored and
+delivered.
+
+UCG06
+
+View activity
+and weekly
+activity (FR-35
+to FR-37)
+
+All roles
+
+Signed in.
+
+1. Open the
+dashboard. 2.
+The system
+loads recent
+activity and
+
+No activity: an
+empty state is
+shown.
+
+The feed and
+chart are shown.
+
+The behavior is
+to be clarified
+(section 7.5).
+
+Help content is
+shown.
+
+Alternative
+
+Postconditions
+
+the weekly
+counts. 3.
+Open an item.
+UCG07
+
+Get help (FR52)
+
+All roles
+
+Signed in.
+
+1. Choose Help
+and Support. 2.
+The system
+shows the help
+content
+chosen by the
+team.
+
+11.2. Student use cases
+ID
+
+Name
+
+Primary
+
+Preconditions
+
+Main flow
+
+actor
+UCS01
+
+Register (FR01)
+
+Student
+(visitor)
+
+flow
+Registration is
+open.
+
+1. Choose
+Register on the
+public website.
+2. Enter name,
+email, program
+and password. 3.
+The system
+validates the
+input and
+creates the
+account.
+
+Email already
+used: error.
+Registration
+closed: a
+message is
+shown.
+
+A student
+account exists
+and can sign in.
+
+Page 31 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+ID
+
+Name
+
+Primary
+actor
+
+Preconditions
+
+Main flow
+
+Alternative
+flow
+
+Postconditions
+
+UCS02
+
+Enroll in a
+course (FR05)
+
+Student
+
+Signed in. The
+course is active.
+
+1. Browse
+courses. 2. Press
+Enroll. 3. The
+system records
+the enrollment
+and shows
+resources and
+assignments.
+
+Already
+enrolled: a
+message is
+shown.
+
+The student is
+enrolled and
+progress starts.
+
+UCS03
+
+Submit
+assignment
+(FR-07)
+
+Student
+
+Enrolled. The
+deadline has
+not passed or
+late work is
+allowed. Not yet
+graded.
+
+1. Open the
+assignment. 2.
+Write an answer
+or attach a file. 3.
+Submit. 4. The
+system stores it
+
+Invalid file:
+rejected.
+Deadline
+passed:
+blocked.
+Submitting
+
+The submission
+is stored and
+progress is
+updated.
+
+and notifies the
+instructor.
+
+again replaces
+the earlier
+work.
+
+UCS04
+
+Apply for an
+internship
+(FR-11)
+
+Student
+
+The internship
+is open.
+
+1. Search and
+filter. 2. Open a
+posting. 3. Write
+a message and
+attach a CV. 4.
+Submit. 5. The
+coordinator is
+notified.
+
+Already
+applied or
+closed:
+blocked.
+
+The application
+has the status
+Submitted.
+
+UCS05
+
+Track or
+withdraw an
+application
+(FR-11, FR-12)
+
+Student
+
+An application
+exists.
+
+1. Open My
+applications. 2.
+See the status. 3.
+Withdraw before
+the final decision
+and confirm.
+
+A final decision
+is recorded:
+withdrawal is
+not offered.
+
+The status is
+current, or
+Withdrawn.
+
+UCS06
+
+Use the AI
+assistant
+(FR-19 to FR21)
+
+Student
+
+Signed in.
+
+1. Open the
+assistant. 2.
+Choose study
+plan, question or
+skill match. 3.
+The system
+returns the
+result with the
+guidance notice.
+
+The AI service
+is unavailable:
+a message is
+shown. Offtopic request:
+refused.
+
+A result is shown
+and no data is
+changed.
+
+Page 32 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+ID
+
+Name
+
+Primary
+actor
+
+Preconditions
+
+Main flow
+
+Alternative
+flow
+
+Postconditions
+
+UCS07
+
+Manage
+projects and
+tasks (FR-27
+to FR-32)
+
+Student
+
+Signed in.
+
+1. Create a
+project. 2. Add
+tasks with a due
+date and priority.
+3. Mark tasks
+done. 4. The
+system updates
+the project
+progress.
+
+Invalid input:
+errors are
+shown. Delete:
+confirmation
+first.
+
+Projects and
+tasks are saved.
+
+UCS08
+
+View badges
+and ranking
+(FR-17)
+
+Student
+
+Signed in.
+
+1. Open
+Achievements. 2.
+See earned
+badges and the
+ranking.
+
+No graded
+work yet: a
+message is
+shown.
+
+The current
+standing is
+shown.
+
+11.3. Instructor use cases
+ID
+
+Name
+
+Primary
+actor
+
+Preconditions
+
+Main flow
+
+Alternative
+flow
+
+Postconditions
+
+UCI01
+
+Add course
+content (FR04, FR-06)
+
+Instructor
+
+Assigned to the
+course.
+
+1. Open an
+assigned
+course. 2. Add
+a resource or
+create an
+assignment. 3.
+The system
+validates the
+input and
+
+Course not
+assigned to
+the user:
+refused.
+Deadline in
+the past:
+error.
+
+The content is
+visible to
+enrolled
+students.
+
+Score outside
+the range:
+error.
+
+The submission
+is graded and
+locked.
+
+notifies the
+students.
+UCI02
+
+Grade
+submissions
+(FR-08)
+
+Instructor
+
+A submission
+exists in the
+instructor's
+course.
+
+1. Open the
+grading queue.
+2. Open a
+submission. 3.
+Enter a score
+and feedback
+and save. 4.
+The student is
+notified.
+
+Page 33 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+ID
+
+Name
+
+Primary
+actor
+
+Preconditions
+
+Main flow
+
+Alternative
+flow
+
+Postconditions
+
+UCI03
+
+Monitor atrisk students
+(FR-09, FR-16)
+
+Instructor
+
+Signed in.
+
+1. Open the
+dashboard or
+the Students
+page. 2. The
+system lists
+flagged
+students (low
+progress,
+missed
+deadlines,
+inactivity). 3.
+Send a
+message if
+needed.
+
+No students
+at risk: a
+message is
+shown.
+
+The instructor is
+informed.
+
+UCI04
+
+View course
+progress (FR09, FR-44)
+
+Instructor
+
+Assigned to the
+course.
+
+1. Open the
+course. 2. See
+submitted and
+graded counts
+and progress.
+
+The course
+has no
+students yet:
+an empty
+state is
+shown.
+
+The figures are
+displayed.
+
+11.4. Coordinator use cases
+ID
+
+Name
+
+Primary
+actor
+
+Preconditions
+
+Main flow
+
+Alternative
+flow
+
+Postconditions
+
+UCC01
+
+Create a
+course and
+assign an
+
+Coordinator
+
+The instructor
+account exists.
+
+1. Open
+Courses. 2.
+Enter code,
+
+Duplicate
+course code:
+error.
+
+The course
+exists with its
+instructor.
+
+Duplicate
+company
+name: error.
+
+The company
+record exists.
+
+instructor
+(FR-04)
+
+UCC02
+
+Register a
+partner
+company (FR13)
+
+title and
+description
+and choose the
+instructor. 3.
+Save.
+Coordinator
+
+Signed in.
+
+1. Open
+Companies. 2.
+Enter name,
+contact person
+and email. 3.
+Save.
+
+Page 34 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+ID
+
+Name
+
+Primary
+actor
+
+Preconditions
+
+Main flow
+
+Alternative
+flow
+
+Postconditions
+
+UCC03
+
+Post and
+manage
+internships
+(FR-10)
+
+Coordinator
+
+The company is
+registered.
+
+1. Open
+Internships. 2.
+Enter the
+details and a
+deadline. 3.
+Post. 4. Later
+edit or close it.
+
+Deadline in
+the past:
+error.
+
+The internship is
+open, updated
+or closed.
+
+UCC04
+
+Review and
+forward
+applications
+(FR-12)
+
+Coordinator
+
+An application
+is Submitted or
+Under review.
+
+1. Open
+Applications. 2.
+Start the
+review. 3.
+Forward the
+application to
+the company
+
+A move
+outside the
+allowed
+order:
+refused.
+
+The status is
+Under review or
+Forwarded.
+
+and confirm. 4.
+The student is
+notified.
+UCC05
+
+Record the
+company's
+decision (FR12)
+
+Coordinator
+
+The application
+is Forwarded.
+
+1. Open the
+application. 2.
+Record
+Accepted or
+Rejected and
+confirm. 3. The
+student is
+notified.
+
+Wrong state:
+refused.
+
+The final status
+is stored.
+
+UCC06
+
+Export CSV
+lists (FR-18,
+FR-26)
+
+Coordinator
+
+Data exists.
+
+1. Open
+Reports or
+Applications. 2.
+Choose the
+export (or an
+internship for
+the company
+list). 3. The
+system
+downloads the
+file.
+
+No
+forwarded
+applicants
+for the
+chosen
+internship: a
+message is
+shown.
+
+A CSV file is
+produced.
+
+Page 35 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+11.5. Administrator use cases
+ID
+
+Name
+
+Primary actor
+
+Preconditions
+
+Main flow
+
+Alternative flow
+
+Postconditions
+
+UCA01
+
+Create a staff
+account (FR-22)
+
+Administrator
+
+Signed in.
+
+1. Open Users. 2.
+Enter name, email,
+role (instructor or
+coordinator) and a
+temporary
+
+Email already
+used: error.
+
+The account
+exists.
+
+password. 3. Save.
+UCA02
+
+Change a role or
+deactivate a user
+(FR-22)
+
+Administrator
+
+The target is not
+the
+administrator's
+own account.
+
+1. Find the user. 2.
+Change the role or
+deactivate, then
+confirm.
+
+Own account: the
+action is disabled.
+
+The role or state
+is updated and
+logged.
+
+UC-
+
+Configure
+
+Administrator
+
+Signed in.
+
+1. Open Settings. 2.
+
+Announcement
+
+The settings are
+
+A03
+
+settings and
+announcement
+(FR-24)
+
+Turn registration
+on or off and edit
+the
+announcement. 3.
+Save.
+
+too long: error.
+
+active.
+
+UC-
+
+Manage public
+
+1. Open the public
+
+Invalid content:
+
+The public
+
+A04
+
+website content
+(FR-46, FR-47)
+
+content page. 2.
+Edit the
+announcement or
+text blocks. 3.
+Preview and
+publish.
+
+errors are shown.
+
+website shows
+the new content.
+
+UCA05
+
+View and export
+user reports (FR18, FR-44)
+
+1. Open Reports. 2.
+See the counts by
+role. 3. Export the
+user list or the role
+summary.
+
+No users match:
+an empty file with
+headers.
+
+A CSV file is
+produced.
+
+Administrator
+
+Administrator
+
+Signed in.
+
+Signed in.
+
+12. System architecture
+12.1. High-level architecture
+CampusBridge is a three-tier web application: a React client, a stateless REST API and a
+MongoDB database. The API, the database and the file storage run in containers started
+by Docker Compose. The public website and the dashboards are served by the same
+client. Technology choices: React, TypeScript, Vite and Tailwind CSS on the client; Node.js,
+Express, JWT and bcrypt in the API; MongoDB with Mongoose for data; Git and GitHub,
+Postman and Docker for tooling.
+
+Page 36 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+high-level architecture · client, API, data and external services
+
+12.2. Frontend and backend communication
+Aspect
+
+Rule
+
+Source
+
+Protocol
+
+JSON over HTTPS. File uploads use multipart/formdata.
+
+DOC
+
+Base path
+
+All endpoints are under /api/v1 .
+
+PROP
+
+Authentication
+
+The client sends Authorization: Bearer
+<token> on every request except sign-in,
+registration and the public settings and content.
+
+DOC
+
+Success format
+
+{ success: true, data } .
+
+PROP
+
+Error format
+
+{ success: false, message } with the right
+
+PROP
+
+HTTP status: 400 validation, 401 unauthenticated,
+403 forbidden, 404 not found, 409 conflict, 429
+rate limited. The client shows message to the user.
+Lists
+
+Query parameters page , limit , sort and filters.
+The response carries the total count.
+
+PROP
+
+Page 37 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+Aspect
+
+Rule
+
+Source
+
+Cross-origin access
+
+CORS allows only the configured frontend origins.
+
+PROP
+
+Client data access
+
+Every page reads data through one service layer
+and one API client, so the screens do not depend
+on endpoint details.
+
+DOC
+
+12.3. REST API structure
+Module
+
+Endpoints (under /api/v1 )
+
+Allowed roles
+
+Authentication
+
+POST /auth/login , POST
+
+Public; all roles for /me
+
+/auth/register , GET /auth/me
+
+Users
+
+GET /admin/users , POST
+/admin/users , PATCH
+
+Administrator; coordinator
+for /instructors
+
+/admin/users/:id/role , PATCH
+/admin/users/:id/status , GET
+/instructors
+
+Profile
+
+GET /profile , PUT /profile , POST
+
+All roles (CV: student)
+
+/profile/cv , DELETE /profile/cv
+
+Courses
+
+GET /courses , GET /courses/:id ,
+POST /courses , POST
+/courses/:id/enroll , POST
+
+Student; coordinator
+(create); instructor
+(resources)
+
+/courses/:id/resources
+
+Assignments and
+grading
+
+GET /assignments , GET
+
+Student; instructor
+
+/assignments/:id , POST
+/courses/:id/assignments , POST
+/assignments/:id/submissions , GET
+/instructor/submissions , PATCH
+/submissions/:id/grade
+
+Partner companies
+
+GET /companies , POST /companies
+
+Coordinator
+
+Internships
+
+GET /internships , GET
+
+Student (read);
+coordinator
+
+/internships/:id , POST
+/internships , PUT /internships/:id ,
+PATCH /internships/:id
+
+Page 38 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+Module
+
+Endpoints (under /api/v1 )
+
+Allowed roles
+
+Applications
+
+POST
+
+Student; coordinator
+
+/internships/:id/applications , GET
+/applications , GET
+/coordinator/applications , PATCH
+/applications/:id/status
+
+Progress and
+achievements
+
+GET /progress , GET /achievements
+
+Student; instructor
+(progress of own courses)
+
+AI assistant
+
+POST /ai/study-plan , POST /ai/ask ,
+
+Student
+
+GET /ai/internship-matches
+
+Notifications
+
+GET /notifications , GET
+
+All roles
+
+/notifications/unread-count , PATCH
+/notifications/:id/read , PATCH
+/notifications/read-all
+
+Reports
+
+GET /reports/applications , GET
+
+Coordinator; administrator
+
+/reports/progress , GET
+/reports/users , GET
+/internships/:id/forwarded
+
+Projects and tasks
+
+GET, POST /projects , PUT, DELETE
+
+Student
+
+/projects/:id , GET, POST /tasks ,
+PATCH, DELETE /tasks/:id
+
+Messages
+
+GET /messages/conversations , GET
+
+All roles
+
+/messages/with/:userId , POST
+/messages
+
+Activity
+
+GET /activity/recent , GET
+
+All roles
+
+/activity/weekly
+
+Search
+
+GET /search?q=
+
+All roles
+
+Settings and public
+content
+
+GET /settings , PUT
+
+Public (read);
+administrator (write)
+
+/admin/settings , GET
+/public/content , PUT
+/admin/public/content , GET, POST
+/admin/announcements
+
+Health
+
+GET /health
+
+Public
+
+Page 39 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+12.4. Authentication and authorization flow
+1. The client sends the email and password to POST /auth/login over HTTPS.
+2. The API validates the body, finds the user by lowercase email, and compares the
+bcrypt hash. When the email is unknown it compares against a dummy hash, so the
+timing does not reveal it. It rejects deactivated accounts.
+3. The API signs a JWT containing the user id, the role and an expiry with the server
+secret, and returns the token and the user.
+4. The client keeps the token (storage decision: SEC-02) and sends it as a bearer token
+on every request.
+5. The authentication middleware verifies the signature and the expiry and attaches the
+user to the request.
+6. The authorization middleware checks that the route allows the user's role. The service
+layer then checks ownership: the assigned instructor of a course, the owner of a
+project, the participant of a conversation.
+7. A 401 response makes the client clear the session and open the sign-in page. A 403
+response shows an access-denied message.
+8. Signing out clears the token on the client. Server-side revocation is a proposed
+enhancement (PROP).
+
+12.5. Database architecture
+One MongoDB database holds all collections (section 13). Mongoose defines the
+schemas, defaults and validation. MongoDB runs as a single-node replica set in Docker
+Compose, because multi-document transactions need a replica set. Uploaded files live in
+a mounted volume or an object store, and the database stores only their metadata.
+
+12.6. Module integration
+Modules cooperate through service calls inside the API and, where one action triggers
+several effects, through one transaction (section 13.4).
+Module
+
+Triggers or feeds
+
+Submissions and grading
+
+A submission or grade updates progress, may
+award achievements, creates a notification and
+writes an activity log.
+
+Page 40 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+Module
+
+Triggers or feeds
+
+Applications
+
+A new application or status change creates
+notifications, sends email and writes an activity
+log.
+
+Progress
+
+Is read by the dashboards, the instructor views and
+the ranking.
+
+Achievements
+
+Are awarded from progress and grade events and
+are read by the ranking.
+
+Tasks
+
+Completing a task updates the project progress
+and writes an activity log.
+
+Messages
+
+A new message creates a notification for the
+recipient.
+
+Announcements
+
+Are managed by administrators and read by the
+public website and the dashboards.
+
+AI assistant
+
+Reads courses, assignments, the profile and
+internships. It never writes.
+
+Dashboards
+
+Read models built from progress, applications,
+tasks and activity.
+
+13. Database design
+The database is MongoDB, accessed through Mongoose. The collections below are a
+proposal (PROP) derived from the requirements. Every document also has _id ,
+createdAt and updatedAt .
+
+13.1. Design principles
+Reference when documents are shared, grow without limit or change on their own:
+users, courses, enrollments, submissions, applications, messages.
+Embed when data belongs to one parent, is small and is always read with it: course
+resources, an application's status history, a user's skills and preferences.
+Denormalize carefully: a few fields (for example courseId on a submission) are
+copied so frequent queries need no join. The service layer keeps them in step.
+Dates are stored as UTC dates. Statuses are enumerations.
+
+Page 41 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+13.2. Collections
+Collection
+
+Purpose and key fields
+
+References
+
+users
+
+Accounts. name , email , none
+passwordHash , role ,
+active , program ,
+year , skills[] , cv
+
+Indexes
+
+Validation rules
+
+unique email ; {role,
+
+Email format and
+lowercase. role in
+student, instructor,
+coordinator, admin.
+
+active}
+
+{name, path, size,
+uploadedAt} ,
+
+passwordHash
+
+required and
+excluded from
+queries by default.
+Skills: at most 15, 2
+to 30 characters
+each.
+
+department ,
+preferences {theme} ,
+lastLoginAt
+
+courses
+
+Courses. code , title ,
+description , status ,
+
+instructorId and
+createdBy to users
+
+unique code ;
+
+A student in a course.
+
+studentId to users ;
+
+enrolledAt
+
+courseId to courses
+
+unique {studentId,
+courseId} ; courseId
+
+Both references
+exist. The student
+has the role student.
+
+Work set by an
+instructor. title ,
+description ,
+deadline , maxScore ,
+
+courseId to courses ;
+
+{courseId, deadline}
+
+maxScore is an
+integer from 1 to 100.
+The deadline is in
+the future when
+created.
+
+unique {assignmentId,
+studentId} ;
+
+status in
+Submitted or
+Graded. Text or file
+is required. File type
+and size are
+checked.
+
+instructorId ; status
+
+resources[] {title,
+type, url}
+
+enrollments
+
+assignments
+
+createdBy to users
+
+allowLate
+submissions
+
+A student's work. text ,
+
+assignmentId ; studentId ;
+
+file {name, path,
+size} , status ,
+
+courseId (copied)
+
+{courseId, status}
+
+submittedAt
+
+grades
+
+The grade of one
+submission. score ,
+maxScore , feedback ,
+
+submissionId to
+submissions ; graderId to
+
+unique submissionId ;
+graderId
+
+Code pattern such
+as CS301. The
+instructor must
+have the role
+instructor.
+createdBy must be
+a coordinator.
+
+0 <= score <=
+maxScore . The
+
+grader is the
+course's instructor.
+Feedback is at most
+1000 characters.
+
+users
+
+gradedAt
+
+partnerOrganizations
+
+Partner companies
+(records, not users).
+name , contactPerson ,
+email , description
+
+createdBy to users
+
+unique name (caseinsensitive collation)
+
+Contact email
+format. Name at
+least 2 characters.
+
+internships
+
+Postings. title , type ,
+skills[] ,
+description ,
+requirements[] ,
+deadline , status
+
+companyId to
+partnerOrganizations ;
+
+{status, deadline} ;
+text index on title and
+skills ; companyId
+
+type in Remote,
+Hybrid, On-site. At
+least one skill and
+one requirement.
+
+createdBy to users
+
+Page 42 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+Collection
+
+Purpose and key fields
+
+References
+
+Indexes
+
+Validation rules
+
+applications
+
+A student's application.
+message , cv (copy of
+the file data), status ,
+
+internshipId ; studentId
+
+unique {internshipId,
+studentId} ; {status,
+appliedAt} ; studentId
+
+status in
+Submitted, Under
+review, Forwarded,
+Accepted, Rejected,
+Withdrawn.
+Transitions are
+checked in the
+service layer against
+the allowed order.
+
+studentId ; courseId
+
+unique {studentId,
+courseId} ;
+averageScore for the
+ranking
+
+percent from 0 to
+100. Recomputed
+from submissions
+and grades.
+
+Badges earned.
+badgeId , awardedAt
+
+userId to users
+
+unique {userId,
+
+badgeId is one of
+the defined badges.
+
+In-app notifications.
+type , title , message ,
+link , read
+
+userId to users
+
+Dashboard and public
+messages. message ,
+audience , startsAt ,
+endsAt , published
+
+createdBy to users
+
+Personal projects (UI).
+name , description ,
+status , dueDate ,
+
+ownerId to users
+
+history[] {status,
+byUserId, at} ,
+appliedAt
+
+progress
+
+Cached progress of a
+student in a course.
+submittedCount ,
+totalAssignments ,
+percent ,
+averageScore
+
+achievements
+
+notifications
+
+announcements
+
+projects
+
+badgeId}
+{userId, read,
+createdAt} descending
+
+{published, audience,
+startsAt}
+
+type in deadline,
+grade, application,
+submission,
+message, system.
+audience in
+dashboard, public or
+both. endsAt after
+startsAt . At most
+200 characters.
+
+{ownerId, archived}
+
+Name required.
+Owner has the role
+student (ASM).
+
+ownerId to users ;
+
+{ownerId, status,
+
+projectId to projects
+
+dueDate} ; projectId
+
+status in todo or
+done. priority in
+low, medium or high
+(ASM). The project
+belongs to the same
+owner.
+
+archived
+tasks
+
+Personal tasks (UI).
+title , dueDate ,
+priority , status ,
+
+(optional)
+
+completedAt
+
+messages
+
+activityLogs
+
+Direct messages (UI).
+conversationKey ,
+body , readAt
+
+senderId ; recipientId
+
+Activity history (UI).
+action , targetType ,
+targetId , meta
+
+userId to users
+
+{conversationKey,
+createdAt} ;
+{recipientId,
+readAt}
+
+{userId, createdAt}
+
+descending
+
+Body from 1 to 2000
+characters (ASM).
+Sender and
+recipient differ and
+are permitted to
+talk.
+action from a fixed
+list. No passwords,
+tokens or message
+bodies in meta .
+
+Page 43 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+13.3. Relationships
+Relationship
+
+Cardinality
+
+User (instructor) to courses
+
+One to many
+
+Users (students) to courses through enrollments
+
+Many to many
+
+Course to assignments
+
+One to many
+
+Assignment to submissions
+
+One to many, at most one per student
+
+Submission to grade
+
+One to one
+
+Partner company to internships
+
+One to many
+
+Internship to applications
+
+One to many, at most one per student
+
+Student to progress
+
+One per student and course
+
+User to projects, and project to tasks
+
+One to many, one to many
+
+Users to messages
+
+Many to many through conversations
+
+User to notifications, achievements and activity
+logs
+
+One to many
+
+13.4. References and transactions
+References are stored as ObjectIds and checked by Mongoose before a write. Populating
+them in queries is limited to the fields the screen needs.
+MongoDB guarantees atomic updates of a single document. A transaction (Mongoose
+session.withTransaction ) is used only where several documents must change together
+
+or not at all:
+Operation
+
+Documents changed in one transaction
+
+Grade a submission
+
+Insert the grade, set the submission status to
+Graded, update progress , award achievements,
+create a notification and write an activity log.
+
+Change an application status
+
+Set the status and append to history , create a
+notification for the student and write an activity
+log.
+
+Page 44 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+Operation
+
+Documents changed in one transaction
+
+Enroll a student
+
+Insert the enrollment and create the progress
+document.
+
+Delete a project
+
+Delete the project and its tasks, and write an
+activity log.
+
+Transactions are kept short and contain no network calls, so sending email and calling the
+AI service happen after the commit. Single-document changes, such as marking a
+notification as read, use no transaction.
+
+13.5. Validation and integrity
+Mongoose schemas define types, enumerations, required fields, lengths and
+patterns.
+Unique indexes enforce the rules that must never be broken, even by a race: one
+account per email, one enrollment, one submission and one application per student
+and target.
+The service layer checks rules that need other documents: instructor ownership,
+status transitions, deadlines and permitted message pairs.
+Database-level JSON Schema validators for the critical collections are a proposed
+addition (PROP).
+Courses are archived rather than deleted, so history stays consistent.
+
+14. Implementation plan
+The plan covers 28 days and four developers: Backend Developer 1 (BE1), Backend
+Developer 2 (BE2), Frontend Developer 1 (FE1) and Frontend Developer 2 (FE2). It is a
+proposal (PROP) and should be adjusted to each developer's availability.
+
+Page 45 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+14.1. Responsibilities and deliverables
+Developer
+
+Responsibilities
+
+Main deliverables
+
+Depends on
+
+BE1: platform and
+identity
+
+Repository and Docker
+Compose (API,
+MongoDB replica set,
+file volume).
+Authentication, RBAC,
+users and
+administration, profile
+and CV upload.
+Settings,
+announcements and
+public content.
+Notifications, activity
+logs, messages,
+projects and tasks,
+global search. Health
+check, CI.
+
+Running stack from
+one command. Auth
+and admin APIs.
+Notification,
+message, activity,
+project, task and
+search APIs.
+Postman collection
+for these modules.
+
+Contract freeze
+(day 3)
+
+BE2: academic and
+internship domain
+
+Courses, enrollments,
+assignments,
+submissions, grades,
+progress and
+achievements. Partner
+companies, internships,
+applications and the
+status workflow.
+Reports and CSV
+exports. AI endpoints
+(study plan, questions,
+matching).
+
+Course, assignment,
+grading, internship
+and application APIs.
+Reports. AI service
+with safety rules.
+Postman collection
+for these modules.
+
+BE1 auth and user
+model (day 5)
+
+Page 46 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+Developer
+
+Responsibilities
+
+Main deliverables
+
+Depends on
+
+FE1: shell, public
+website and
+student workspace
+
+Design system with
+light and dark themes.
+Public website.
+Authentication pages.
+Application shell
+(sidebar, header,
+search, notification
+indicator, theme
+switch). Student
+dashboard (analytics,
+project cards, task list,
+activity feed, weekly
+chart, quick links).
+Profile and
+preferences. Projects,
+tasks and messages
+screens.
+
+Reusable
+components. Public
+site and sign-in.
+Student dashboard
+and workspace
+screens.
+
+Design tokens
+(day 2). BE1 auth
+(day 7)
+
+FE2: learning,
+internships and
+staff areas
+
+API client and route
+protection by role.
+Student courses,
+assignments,
+internships,
+applications, AI
+assistant and
+achievements.
+Instructor area
+(courses, grading,
+students). Coordinator
+area (courses,
+companies, internships,
+applications, reports).
+Administrator area
+(users, settings, public
+content, reports).
+
+Role-based pages for
+all four roles using
+the shared
+components.
+
+FE1 components
+(day 4). BE2 APIs
+(day 10)
+
+Page 47 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+14.2. Module ownership
+Module
+
+Backend owner
+
+Frontend owner
+
+Authentication, users, profile
+
+BE1
+
+FE1 (pages), FE2 (route
+protection)
+
+Course management and
+enrollment
+
+BE2
+
+FE2
+
+Assignments and grading
+
+BE2
+
+FE2
+
+Internships and applications
+
+BE2
+
+FE2
+
+Progress, badges and rankings
+
+BE2
+
+FE2
+
+AI learning assistant
+
+BE2
+
+FE2
+
+Notifications
+
+BE1
+
+FE1
+
+Reports and CSV exports
+
+BE2
+
+FE2
+
+Projects and tasks
+
+BE1
+
+FE1
+
+Messaging
+
+BE1
+
+FE1
+
+Activity history
+
+BE1
+
+FE1
+
+Dashboards and analytics
+
+BE1 and BE2 (their
+data)
+
+FE1 (student), FE2 (other roles)
+
+Public website and settings
+
+BE1
+
+FE1 (site), FE2 (administrator
+pages)
+
+Help and support
+
+BE1
+
+FE1 (after clarification)
+
+14.3. Schedule (28 days)
+Days
+
+BE1
+
+BE2
+
+FE1
+
+FE2
+
+Milestone
+
+1 to 3
+
+Repository, Docker
+Compose,
+MongoDB replica
+set, project
+structure
+
+User-independent
+models for
+courses,
+assignments,
+internships
+
+Design tokens,
+themes,
+component list
+
+API client,
+routing plan,
+TypeScript types
+
+Contract
+freeze:
+OpenAPI file
+and Postman
+collection
+agreed
+
+Page 48 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+Days
+
+BE1
+
+BE2
+
+FE1
+
+FE2
+
+Milestone
+
+4 to 7
+
+Auth, RBAC, users,
+seed data
+
+Courses,
+enrollments,
+assignments
+
+Shell, public
+website, sign-in
+and registration
+
+Role routes,
+student course
+pages against
+mocks
+
+Day 7: sign-in
+works end to
+end
+
+8 to
+10
+
+Profile and CV
+upload, admin APIs
+
+Submissions,
+grading, progress
+
+Student dashboard
+layout, profile and
+preferences
+
+Assignments,
+grading, admin
+users pages
+
+Learning flow
+works end to
+end
+
+11 to
+14
+
+Notifications,
+activity logs
+
+Partner
+companies,
+internships,
+applications
+
+Notification
+center, activity
+feed, weekly chart
+
+Internships,
+applications,
+coordinator
+pages
+
+Day 14:
+internship
+flow works
+end to end
+
+15 to
+18
+
+Projects, tasks,
+messages, search
+
+Reports, CSV,
+achievements,
+rankings
+
+Project cards, task
+list, messages,
+search UI
+
+Reports,
+achievements,
+instructor pages
+
+Day 18: all core
+modules
+integrated
+
+19 to
+
+Settings,
+
+AI endpoints and
+
+Quick links,
+
+AI assistant,
+
+Day 21: feature
+
+21
+
+announcements,
+public content
+
+safety rules
+
+analytics polish,
+public
+announcements
+
+administrator
+pages
+
+freeze
+
+22 to
+25
+
+Security review,
+rate limits,
+validation, backups
+
+Integration tests,
+query tuning
+
+Accessibility and
+responsive fixes,
+frontend tests
+
+End-to-end tests, Day 25: test
+bug fixing
+cycle
+complete
+
+26 to
+28
+
+Deployment,
+documentation
+
+API
+documentation,
+data seed
+
+Demo flows,
+screenshots
+
+README, demo
+video, final
+presentation
+
+Day 28:
+submission
+
+14.4. API contracts and integration boundaries
+Contract first. The API is described in one OpenAPI file in the repository and in a
+Postman collection. Frontend and backend develop against it. After the freeze on day
+3, a change needs a pull request that both sides approve.
+One response format for all endpoints (section 12.2). TypeScript types for requests
+and responses are generated from the OpenAPI file and shared with the frontend.
+Mocks until ready. The frontend uses a mock layer for endpoints that are not yet
+built, and switches to the real API one module at a time.
+Integration checkpoints on days 7, 14 and 21: the two backend and two frontend
+developers run the complete flows together.
+
+Page 49 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+Boundaries. The frontend never reads the database or the backend code. The
+backend never renders screens. Shared knowledge lives only in the OpenAPI file, the
+seed data and the design tokens.
+Git workflow. Each developer works on their own branch and opens pull requests to
+main . A developer from the other side or the paired developer reviews each pull
+
+request. Merges need passing tests and lint.
+Definition of done. The feature meets its requirement, has tests, is documented in
+the OpenAPI file or the component list, passes review and works in the Docker stack.
+
+14.5. Critical dependencies
+Dependency
+
+Blocks
+
+Mitigation
+
+Contract freeze (day 3)
+
+All integration work
+
+Hold a short contract
+workshop on day 2
+
+Authentication (BE1, day 7)
+
+Every protected screen
+and API
+
+FE uses a mocked user
+until then
+
+Course and assignment APIs
+(BE2, day 10)
+
+Student learning screens
+and grading
+
+FE2 builds against mocks
+first
+
+MongoDB replica set in Docker
+
+Transactions (section
+13.4)
+
+BE1 delivers it in the first
+three days
+
+Clarification of Help and Support
+and the UI details (section 18)
+
+FR-52 and the UI-derived
+screens
+
+Decide by day 5
+
+15. Testing strategy
+Level
+
+Scope
+
+Tools
+
+Owner
+
+Unit
+
+Validators, services,
+status transitions,
+progress calculation,
+badge rules, date helpers
+
+A unit-test framework
+for Node.js (for example
+Jest) and Vitest
+
+Each developer
+for their module
+
+Page 50 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+Level
+
+Scope
+
+Tools
+
+Owner
+
+API and
+integration
+
+Endpoints with a real
+MongoDB replica set:
+authentication, role
+checks, ownership,
+transactions, error
+formats
+
+A test framework with
+Supertest; Postman
+collection run in CI
+
+BE1 and BE2
+
+Component
+
+Forms, lists, dialogs,
+themes, navigation
+
+Vitest with React
+Testing Library
+
+FE1 and FE2
+
+End-to-end
+
+The journeys in section 11,
+in a browser
+
+A browser automation
+tool such as Playwright
+(PROP)
+
+FE2 with BE1
+
+Security
+
+Access to other users'
+data, expired and forged
+tokens, NoSQL injection,
+XSS, upload abuse, rate
+limits
+
+Manual checks,
+automated cases and a
+dependency audit
+
+BE1
+
+Accessibility
+
+Keyboard use, focus,
+contrast in both themes,
+text alternatives for
+charts
+
+Automated checks and
+manual testing
+
+FE1 and FE2
+
+Performance
+
+Response times and page
+load against NFR-03
+
+Postman timings and
+browser tools; a load
+test is proposed (PROP)
+
+BE2 and FE1
+
+AI safety
+
+Off-topic requests,
+requests to change
+grades, failures of the AI
+service
+
+Scripted prompts
+
+BE2
+
+Usability
+
+First-time tasks on phone
+and desktop
+
+Observation with test
+users
+
+FE1
+
+Entry criteria: the feature is merged to the integration branch and the seed data is
+loaded. Exit criteria: no open defects of high severity, every Must requirement has a
+passing test case, and the full set of journeys passes in the Docker stack.
+
+Page 51 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+Critical test cases: wrong role gets 403; a student cannot read another student's
+submission; a duplicate enrollment, submission or application is refused; a grade outside
+the range is refused; a status change outside the allowed order is refused; a grade
+transaction rolls back completely when one step fails; a deactivated user cannot sign in;
+both themes keep text readable; a message is not visible to a third user.
+
+16. Assumptions and constraints
+16.1. Constraints
+ID
+
+Constraint
+
+Source
+
+CON-01
+
+The project runs for 28 days under the Brolf Tech
+Remote Internship Challenge 2026.
+
+DOC
+
+CON02
+
+The technology stack is fixed: React, TypeScript,
+Vite and Tailwind CSS; Node.js, Express, REST,
+JWT and bcrypt; MongoDB with Mongoose; Git
+and GitHub, Postman, Docker and file storage.
+MySQL and Prisma are not used.
+
+Confirmed by the project
+team
+
+CON03
+
+Four developers share the work (section 14).
+
+Confirmed by the project
+team
+
+CON04
+
+Free or low-cost infrastructure is used.
+
+DOC
+
+CON05
+
+Any AI feature must not present itself as a
+professional or give unsafe advice, and it only
+covers learning and internships.
+
+DOC
+
+Page 52 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+16.2. Assumptions
+ID
+
+Assumption
+
+Affects
+
+ASM-01
+
+The UI reference shows a student dashboard with
+a sidebar, search, notifications, theme switch,
+project cards, task lists, recent activity, weekly
+activity, analytics and quick links, and a public
+website. Details not stated are treated as
+assumptions.
+
+FR-27 to FR-47
+
+ASM-02
+
+Projects and tasks belong to students only,
+because only the student dashboard was shown.
+
+FR-27 to FR-32
+
+ASM-03
+
+Project progress is the share of completed tasks.
+
+FR-28
+
+ASM-04
+
+Task priorities are low, medium and high, and task
+statuses are todo and done.
+
+FR-30 to FR-32
+
+ASM-05
+
+Students may message instructors and
+coordinators, and staff may message any user.
+Student-to-student messaging is out of scope until
+confirmed.
+
+FR-33, FR-34
+
+ASM-06
+
+Global search covers courses, internships,
+projects, tasks and messages the user may access.
+
+FR-42
+
+ASM-07
+
+The default theme follows the system setting and
+the user's choice then overrides it.
+
+FR-39
+
+ASM-08
+
+The editable parts of the public website are the
+announcement and a few text blocks.
+
+FR-47
+
+ASM-09
+
+The first target load is one university department
+(about 500 users, 50 concurrent).
+
+NFR-06
+
+ASM-10
+
+The accessibility target is WCAG 2.1 level AA.
+
+NFR-11
+
+ASM-11
+
+The JWT is stored in memory or an HTTP-only
+cookie. The final choice is made in week 1.
+
+SEC-02
+
+ASM-12
+
+Partner companies never sign in.
+
+Section 4.3
+
+Page 53 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+17. Future enhancements
+These are not part of this version.
+Email reminders before deadlines and digest emails.
+Real-time messaging and notifications with WebSockets, and browser push
+notifications.
+A native mobile application.
+Single sign-on with the university's identity system and integration with the student
+information system.
+Calendar view and calendar export for deadlines and tasks.
+Shared projects with several members, and projects linked to courses.
+Grading rubrics, plagiarism checks and virus scanning of uploads.
+Advanced analytics and exports for coordinators and administrators.
+Interface languages such as Amharic and Afaan Oromo.
+Staff workspaces with projects and tasks (FR-50).
+
+18. Open issues and items to be clarified
+No.
+
+Issue
+
+Why it matters
+
+Proposed resolution
+
+1
+
+The three UI screenshots
+(public website, student
+dashboard in dark and
+light mode) were not
+available while this version
+was written. The UIderived requirements rest
+on the team's description.
+
+Details such as card
+contents, fields and
+labels may differ.
+
+Compare sections 7.3 and
+10 with the screenshots
+and correct the
+requirements, then
+change the tags from ASM
+to UI.
+
+2
+
+Help and Support has no
+defined content (FR-52).
+
+The requirement cannot
+be built or tested.
+
+Choose option A, B or C in
+section 7.5.
+
+3
+
+Who owns projects and
+tasks (ASM-02).
+
+It decides the data model
+and the permissions.
+
+Confirm students only, or
+approve FR-50.
+
+4
+
+Which message pairs are
+allowed (ASM-05).
+
+It decides the permission
+rules and the privacy risk.
+
+Confirm the pairs.
+
+Page 54 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+No.
+
+Issue
+
+Why it matters
+
+Proposed resolution
+
+5
+
+The editable content of
+the public website (ASM08).
+
+It decides the size of FR47.
+
+List the blocks.
+
+6
+
+Storage of the JWT on the
+client (SEC-02).
+
+It affects the security of
+the sessions.
+
+Decide in week 1.
+
+7
+
+The existing prototype
+differs from this stack. The
+current frontend is written
+in JavaScript, and the first
+backend draft used
+MySQL with Prisma and
+organization approval for
+internships.
+
+Work would have to be
+migrated, and the
+coordinator-managed
+company model could be
+lost.
+
+Plan the migration to
+TypeScript and MongoDB
+in the first week, and keep
+partner companies as
+coordinator-managed
+records.
+
+8
+
+Requirements FR-48 to
+FR-51 are proposals.
+
+They add effort and are
+not in the original scope.
+
+Approve, defer or drop
+each one.
+
+19. Traceability summary
+Module
+
+Requirements
+
+Use
+cases
+
+Collections
+
+Source
+
+M1
+Authentication
+and authorization
+
+FR-01, FR-02,
+FR-03, FR-22,
+FR-23, FR-24
+
+UC-G01,
+UC-S01,
+UC-A01,
+UC-A02,
+UC-A03
+
+users
+
+DOC
+
+M2 Course
+management and
+enrollment
+
+FR-04, FR-05
+
+UC-S02,
+UC-C01,
+UC-I01
+
+courses , enrollments
+
+DOC
+
+M3 Assignments
+and grading
+
+FR-06, FR-07,
+FR-08
+
+UC-S03,
+UC-I01,
+UC-I02
+
+assignments ,
+
+DOC
+
+M4 Internship
+management
+
+FR-10, FR-13
+
+UC-C02,
+UC-C03
+
+internships ,
+
+submissions , grades
+
+DOC
+
+partnerOrganizations
+
+Page 55 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+Module
+
+Requirements
+
+Use
+cases
+
+Collections
+
+Source
+
+M5 Application
+workflow
+
+FR-11, FR-12
+
+UC-S04,
+UC-S05,
+UC-C04,
+UC-C05
+
+applications
+
+DOC
+
+M6 Progress,
+badges and
+rankings
+
+FR-09, FR-17
+
+UC-I03,
+UC-I04,
+UC-S08
+
+progress ,
+
+DOC
+
+M7 Role-based
+dashboards
+
+FR-16, FR-44
+
+UC-G06,
+UC-I03,
+UC-I04,
+UC-A05
+
+read models
+
+DOC and
+UI
+
+M8 AI learning
+assistant
+
+FR-19, FR-20, FR21
+
+UC-S06
+
+read only
+
+DOC
+
+M9 Notifications
+
+FR-14, FR-15, FR25, FR-43
+
+UC-G03
+
+notifications
+
+DOC and
+UI
+
+M10 Reports and
+CSV exports
+
+FR-18, FR-26
+
+UC-C06,
+UC-A05
+
+read models
+
+DOC
+
+M11 Project
+management
+
+FR-27, FR-28,
+FR-29
+
+UC-S07
+
+projects
+
+UI
+
+M12 Task
+management
+
+FR-30, FR-31, FR32
+
+UC-S07
+
+tasks
+
+UI
+
+M13 Messaging
+management
+
+FR-33, FR-34
+
+UC-G05
+
+messages
+
+UI
+
+M14 Activity
+history and
+weekly activity
+
+FR-35, FR-36,
+FR-37
+
+UC-G06
+
+activityLogs
+
+UI
+
+M15 Profile and
+preferences
+
+FR-03, FR-23,
+FR-38, FR-39
+
+UC-G02
+
+users
+
+DOC and
+UI
+
+M16 Quick links,
+navigation and
+search
+
+FR-40, FR-41,
+FR-42
+
+UC-G04
+
+read models
+
+UI
+
+achievements , grades
+
+Page 56 of 57
+
+CampusBridge: Software Requirements Specification (SRS)
+
+Module
+
+Requirements
+
+Use
+cases
+
+Collections
+
+Source
+
+M17 Public
+website
+management
+
+FR-45, FR-46,
+FR-47
+
+UC-A04
+
+announcements
+
+UI
+
+M18 Help and
+support
+
+FR-52
+
+UC-G07
+
+to be defined
+
+UI (to be
+clarified)
+
+Proposed
+enhancements
+
+FR-48 to FR-51
+
+none yet
+
+users , activityLogs
+
+PROP
+
+Page 57 of 57
+
+

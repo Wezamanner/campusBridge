@@ -1,0 +1,1064 @@
+openapi: 3.0.3
+info:
+  title: CampusBridge Student and Instructor API Specification
+  description: >
+    Official REST API contract for the Student and Instructor modules of the
+    CampusBridge university learning and internship platform. Developed under Phase 1.
+  version: 1.0.0
+servers:
+  - url: http://localhost:5001/api/v1
+    description: Local development API server
+paths:
+  # ==========================================
+  # STUDENT PROFILE & CV
+  # ==========================================
+  /student/profile:
+    get:
+      summary: Retrieve authenticated student's profile
+      tags: [Student Profile]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profile retrieved successfully
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    put:
+      summary: Update authenticated student's profile
+      tags: [Student Profile]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, minLength: 2, maxLength: 100 }
+                program: { type: string, maxLength: 100 }
+                year: { type: integer, minimum: 1, maximum: 7 }
+                skills:
+                  type: array
+                  maxItems: 15
+                  items: { type: string, minLength: 2, maxLength: 30 }
+                preferences:
+                  type: object
+                  properties:
+                    theme: { type: string, enum: [dark, light] }
+      responses:
+        '200':
+          description: Profile updated successfully
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+
+  /student/profile/cv:
+    post:
+      summary: Upload or replace student CV (Max 2 MB, PDF/Word)
+      tags: [Student Profile]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [cv]
+              properties:
+                cv:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: CV uploaded and attached
+        '413':
+          description: File size exceeds 2 MB
+        '415':
+          description: Unsupported file format
+    delete:
+      summary: Remove CV document
+      tags: [Student Profile]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: CV removed
+
+  # ==========================================
+  # STUDENT COURSES & ENROLLMENT
+  # ==========================================
+  /student/courses:
+    get:
+      summary: Browse available active courses
+      tags: [Student Courses]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: page
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 10 }
+      responses:
+        '200':
+          description: Courses retrieved
+  /student/courses/{courseId}:
+    get:
+      summary: Get course syllabus and details
+      tags: [Student Courses]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Course details
+  /student/courses/{courseId}/enroll:
+    post:
+      summary: Enroll in course
+      tags: [Student Courses]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '201':
+          description: Enrolled successfully
+        '409':
+          description: Already enrolled
+  /student/courses/enrolled:
+    get:
+      summary: List courses student is enrolled in
+      tags: [Student Courses]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Enrolled courses with progress
+  /student/courses/{courseId}/resources:
+    get:
+      summary: Access learning materials (requires enrollment)
+      tags: [Student Courses]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Course resources
+        '403':
+          description: Forbidden - not enrolled
+  /student/courses/{courseId}/assignments:
+    get:
+      summary: View assignments for enrolled course
+      tags: [Student Courses]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Course assignments
+
+  # ==========================================
+  # STUDENT ASSIGNMENTS & SUBMISSION
+  # ==========================================
+  /student/assignments:
+    get:
+      summary: List all assignments across enrolled courses
+      tags: [Student Assignments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [pending, submitted, graded] }
+      responses:
+        '200':
+          description: Assignment list
+  /student/assignments/{assignmentId}/submit:
+    post:
+      summary: Submit assignment or replace ungraded submission (Max 5 MB)
+      tags: [Student Assignments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                text: { type: string }
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Submission replaced
+        '201':
+          description: Submission created
+        '413':
+          description: File exceeds 5 MB
+        '422':
+          description: Deadline expired or already graded
+  /student/assignments/{assignmentId}/submission:
+    get:
+      summary: View own submission, score and feedback
+      tags: [Student Assignments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Submission details
+
+  # ==========================================
+  # STUDENT PROGRESS & DEADLINES
+  # ==========================================
+  /student/progress:
+    get:
+      summary: View aggregate learning progress
+      tags: [Student Progress]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Progress statistics
+  /student/deadlines:
+    get:
+      summary: View upcoming assignment & task deadlines
+      tags: [Student Progress]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Upcoming deadlines
+
+  # ==========================================
+  # STUDENT INTERNSHIPS & APPLICATIONS
+  # ==========================================
+  /student/internships:
+    get:
+      summary: Browse open verified internships
+      tags: [Student Internships]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: type
+          in: query
+          schema: { type: string, enum: [Remote, Hybrid, On-site] }
+      responses:
+        '200':
+          description: Open internships
+  /student/internships/{internshipId}/apply:
+    post:
+      summary: Apply for internship with CV and message
+      tags: [Student Internships]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: internshipId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                message: { type: string, minLength: 10, maxLength: 2000 }
+                useProfileCv: { type: boolean, default: true }
+      responses:
+        '201':
+          description: Application submitted
+        '409':
+          description: Already applied
+  /student/applications:
+    get:
+      summary: Track own internship applications
+      tags: [Student Internships]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Application status list
+  /student/applications/{applicationId}/withdraw:
+    post:
+      summary: Withdraw active application
+      tags: [Student Internships]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Application withdrawn
+
+  # ==========================================
+  # ACHIEVEMENTS & RANKINGS
+  # ==========================================
+  /student/achievements:
+    get:
+      summary: View earned achievement badges
+      tags: [Student Achievements]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Earned badges
+  /student/rankings:
+    get:
+      summary: View cohort leaderboards with privacy anonymization
+      tags: [Student Achievements]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Leaderboard data
+
+  # ==========================================
+  # STUDENT PROJECTS & TASKS (ASM-02)
+  # ==========================================
+  /student/projects:
+    get:
+      summary: List personal projects (Student only per ASM-02)
+      tags: [Student Projects & Tasks]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Personal projects
+    post:
+      summary: Create personal project
+      tags: [Student Projects & Tasks]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, minLength: 2, maxLength: 150 }
+                description: { type: string }
+                status: { type: string, enum: [active, completed, on_hold] }
+                dueDate: { type: string, format: date-time }
+      responses:
+        '201':
+          description: Project created
+  /student/projects/{projectId}:
+    get:
+      summary: Get project details
+      tags: [Student Projects & Tasks]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Project details
+    put:
+      summary: Update project
+      tags: [Student Projects & Tasks]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                description: { type: string }
+                status: { type: string, enum: [active, completed, on_hold] }
+      responses:
+        '200':
+          description: Project updated
+    delete:
+      summary: Archive or delete project
+      tags: [Student Projects & Tasks]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Project archived
+
+  /student/tasks:
+    get:
+      summary: List personal tasks
+      tags: [Student Projects & Tasks]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: projectId
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { type: string, enum: [todo, done] }
+        - name: priority
+          in: query
+          schema: { type: string, enum: [low, medium, high] }
+      responses:
+        '200':
+          description: Tasks retrieved
+    post:
+      summary: Create personal task
+      tags: [Student Projects & Tasks]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title: { type: string, minLength: 2, maxLength: 200 }
+                priority: { type: string, enum: [low, medium, high], default: medium }
+                status: { type: string, enum: [todo, done], default: todo }
+                dueDate: { type: string, format: date-time }
+                projectId: { type: string }
+      responses:
+        '201':
+          description: Task created
+  /student/tasks/{taskId}/status:
+    patch:
+      summary: Toggle task status (todo/done)
+      tags: [Student Projects & Tasks]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [todo, done] }
+      responses:
+        '200':
+          description: Task status toggled
+
+  # ==========================================
+  # STUDENT ACTIVITY & AI
+  # ==========================================
+  /student/activity:
+    get:
+      summary: Get recent personal activity stream
+      tags: [Student Activity]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Activity list
+  /student/activity/weekly:
+    get:
+      summary: Get weekly activity counts for dashboard chart
+      tags: [Student Activity]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Weekly activity counts
+
+  /student/ai/study-plan:
+    post:
+      summary: Generate AI study schedule (read-only)
+      tags: [Student AI Assistant]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                daysAvailable: { type: integer, minimum: 1, maximum: 30 }
+                dailyHours: { type: number, minimum: 0.5, maximum: 16 }
+                focusCourseId: { type: string }
+      responses:
+        '200':
+          description: Generated study plan
+  /student/ai/ask:
+    post:
+      summary: Ask course/platform Q&A (read-only)
+      tags: [Student AI Assistant]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [question]
+              properties:
+                question: { type: string, minLength: 3 }
+                courseId: { type: string }
+      responses:
+        '200':
+          description: Answer generated
+  /student/ai/skill-match:
+    post:
+      summary: AI internship skill match & gap analysis (read-only)
+      tags: [Student AI Assistant]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Matched internships and recommendations
+
+  # ==========================================
+  # INSTRUCTOR PROFILE & COURSES
+  # ==========================================
+  /instructor/profile:
+    get:
+      summary: Retrieve instructor's profile
+      tags: [Instructor Profile]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profile retrieved
+    put:
+      summary: Update instructor's profile
+      tags: [Instructor Profile]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                department: { type: string }
+      responses:
+        '200':
+          description: Profile updated
+
+  /instructor/courses:
+    get:
+      summary: List courses assigned to instructor
+      tags: [Instructor Courses]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Assigned courses
+  /instructor/courses/{courseId}:
+    get:
+      summary: View assigned course details
+      tags: [Instructor Courses]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Course details
+  /instructor/courses/{courseId}/students:
+    get:
+      summary: View enrolled students roster
+      tags: [Instructor Courses]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Enrolled student roster
+  /instructor/courses/{courseId}/stats:
+    get:
+      summary: Get course performance and grading statistics
+      tags: [Instructor Courses]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Aggregate statistics
+
+  # ==========================================
+  # INSTRUCTOR RESOURCES & ASSIGNMENTS
+  # ==========================================
+  /instructor/courses/{courseId}/resources:
+    get:
+      summary: List learning resources for assigned course
+      tags: [Instructor Resources]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Resources retrieved
+    post:
+      summary: Add learning resource
+      tags: [Instructor Resources]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, url]
+              properties:
+                title: { type: string, maxLength: 150 }
+                type: { type: string, enum: [pdf, document, slides, link, video, other] }
+                url: { type: string }
+      responses:
+        '201':
+          description: Resource added
+  /instructor/courses/{courseId}/resources/{resourceId}:
+    put:
+      summary: Update learning resource
+      tags: [Instructor Resources]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: resourceId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                url: { type: string }
+      responses:
+        '200':
+          description: Resource updated
+    delete:
+      summary: Remove learning resource
+      tags: [Instructor Resources]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: resourceId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Resource deleted
+
+  /instructor/courses/{courseId}/assignments:
+    get:
+      summary: List assignments for assigned course
+      tags: [Instructor Assignments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Assignments retrieved
+    post:
+      summary: Create new assignment
+      tags: [Instructor Assignments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, description, deadline, maxScore]
+              properties:
+                title: { type: string, minLength: 3, maxLength: 200 }
+                description: { type: string }
+                deadline: { type: string, format: date-time }
+                maxScore: { type: number, minimum: 1, maximum: 100, default: 100 }
+                allowLate: { type: boolean, default: false }
+      responses:
+        '201':
+          description: Assignment created
+  /instructor/assignments/{assignmentId}:
+    get:
+      summary: View assignment details
+      tags: [Instructor Assignments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Assignment details
+    put:
+      summary: Update assignment details
+      tags: [Instructor Assignments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                description: { type: string }
+                deadline: { type: string, format: date-time }
+      responses:
+        '200':
+          description: Assignment updated
+    delete:
+      summary: Delete assignment (if no submissions exist)
+      tags: [Instructor Assignments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Assignment deleted
+        '409':
+          description: Cannot delete assignment with active submissions
+
+  # ==========================================
+  # INSTRUCTOR GRADING & AT-RISK
+  # ==========================================
+  /instructor/grading-queue:
+    get:
+      summary: Retrieve pending submissions grading queue
+      tags: [Instructor Grading]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Grading queue retrieved
+  /instructor/courses/{courseId}/submissions:
+    get:
+      summary: View submissions for course
+      tags: [Instructor Grading]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { type: string, enum: [Submitted, Graded] }
+      responses:
+        '200':
+          description: Submissions retrieved
+  /instructor/submissions/{submissionId}:
+    get:
+      summary: View submission content and file link
+      tags: [Instructor Grading]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: submissionId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Submission details
+  /instructor/submissions/{submissionId}/grade:
+    post:
+      summary: Score and provide written feedback on submission
+      tags: [Instructor Grading]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: submissionId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [score]
+              properties:
+                score: { type: number, minimum: 0 }
+                feedback: { type: string, maxLength: 1000 }
+      responses:
+        '200':
+          description: Submission graded and progress recalculated
+    put:
+      summary: Update existing grade or feedback
+      tags: [Instructor Grading]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: submissionId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                score: { type: number, minimum: 0 }
+                feedback: { type: string, maxLength: 1000 }
+      responses:
+        '200':
+          description: Grade updated
+
+  /instructor/courses/{courseId}/at-risk:
+    get:
+      summary: Identify at-risk students with diagnostic reasons
+      tags: [Instructor At-Risk Monitoring]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: At-risk students list
+  /instructor/dashboard/summary:
+    get:
+      summary: Get aggregate metrics for instructor dashboard
+      tags: [Instructor At-Risk Monitoring]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Dashboard summary metrics
+  /instructor/activity:
+    get:
+      summary: Get instructor activity history
+      tags: [Instructor At-Risk Monitoring]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Activity history
+  /instructor/ai/assignment-helper:
+    post:
+      summary: AI assignment rubric and prompt suggestions (read-only)
+      tags: [Instructor AI Assistant]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [topic, courseId]
+              properties:
+                topic: { type: string }
+                courseId: { type: string }
+                difficultyLevel: { type: string, enum: [beginner, intermediate, advanced] }
+      responses:
+        '200':
+          description: Suggestions generated
+
+  # ==========================================
+  # SHARED NOTIFICATIONS & MESSAGING
+  # ==========================================
+  /notifications:
+    get:
+      summary: List user notifications
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Notification list
+  /notifications/unread-count:
+    get:
+      summary: Get unread notification count
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Unread count
+  /notifications/{notificationId}/read:
+    patch:
+      summary: Mark notification as read
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Marked as read
+  /notifications/read-all:
+    patch:
+      summary: Mark all notifications as read
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: All notifications marked as read
+
+  /messages/conversations:
+    get:
+      summary: List conversation threads with unread counters
+      tags: [Messaging]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Conversations retrieved
+  /messages:
+    post:
+      summary: Send direct message (ASM-05 pairing rules enforced)
+      tags: [Messaging]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [recipientId, body]
+              properties:
+                recipientId: { type: string }
+                body: { type: string, minLength: 1, maxLength: 2000 }
+      responses:
+        '201':
+          description: Message dispatched
+        '403':
+          description: Forbidden message pair (e.g. student to student)
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    BadRequestError:
+      description: Bad request - validation failed
+    UnauthorizedError:
+      description: Unauthorized - missing or invalid token
+    ForbiddenError:
+      description: Forbidden - role or ownership violation
+    NotFoundError:
+      description: Resource not found
