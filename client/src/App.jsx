@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
+import { ThemeProvider, useTheme } from './context/ThemeContext.jsx';
 import ProtectedRoute from './routes/ProtectedRoute.jsx';
 import LoginPage from './pages/public/LoginPage.jsx';
 import RegisterPage from './pages/public/RegisterPage.jsx';
@@ -26,7 +27,7 @@ import {
 } from 'lucide-react';
 
 function LandingPage() {
-  const [theme, setTheme] = useState('dark');
+  const { isDark, toggleTheme } = useTheme();
   const [health, setHealth] = useState({ loading: true, data: null, error: null });
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
@@ -40,18 +41,6 @@ function LandingPage() {
       .then((json) => setHealth({ loading: false, data: json, error: null }))
       .catch((err) => setHealth({ loading: false, data: null, error: err.message }));
   }, []);
-
-  const toggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    if (next === 'light') {
-      document.documentElement.classList.add('light');
-    } else {
-      document.documentElement.classList.remove('light');
-    }
-  };
-
-  const isDark = theme === 'dark';
 
   const getDashboardPath = () => {
     if (!user) return '/login';
@@ -328,9 +317,10 @@ function LandingPage() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <Routes>
+    <ThemeProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
@@ -375,5 +365,6 @@ export default function App() {
         </Routes>
       </AuthProvider>
     </BrowserRouter>
+  </ThemeProvider>
   );
 }

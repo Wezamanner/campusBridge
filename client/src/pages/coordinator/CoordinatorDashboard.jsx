@@ -1,72 +1,134 @@
 import React from 'react';
-import { useAuth } from '../../context/AuthContext.jsx';
-import { Briefcase, LogOut, CheckCircle2, Sparkles } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import AppLayout from '../../layouts/AppLayout.jsx';
+import WelcomeBanner from '../../components/dashboard/WelcomeBanner.jsx';
+import StatCard from '../../components/ui/StatCard.jsx';
+import DashboardCard from '../../components/ui/DashboardCard.jsx';
+import DataTable from '../../components/ui/DataTable.jsx';
+import Badge from '../../components/ui/Badge.jsx';
+import { 
+  Briefcase, 
+  Building2, 
+  FileText, 
+  BookOpen, 
+  FileSpreadsheet, 
+  Users 
+} from 'lucide-react';
 
 export default function CoordinatorDashboard() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const APPLICATION_COLUMNS = [
+    { header: 'Applicant', accessor: 'student' },
+    { header: 'Company', accessor: 'company' },
+    { header: 'Internship Role', accessor: 'role' },
+    {
+      header: 'Workflow Stage',
+      accessor: 'status',
+      render: (val) => {
+        const variants = {
+          Submitted: 'cyan',
+          'Under review': 'warning',
+          Forwarded: 'purple',
+          Accepted: 'success',
+          Rejected: 'danger',
+        };
+        return <Badge variant={variants[val] || 'neutral'} size="sm" dot>{val}</Badge>;
+      },
+    },
+    {
+      header: 'Action',
+      accessor: 'action',
+      render: () => (
+        <span className="text-xs font-semibold text-[#00C8FF] hover:underline cursor-pointer">
+          Review Application &rarr;
+        </span>
+      ),
+    },
+  ];
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
-  };
+  const APPLICATION_DATA = [
+    {
+      student: 'Sabrin Abdu',
+      company: 'Brolf Tech Partners',
+      role: 'Full Stack Engineering Intern',
+      status: 'Under review',
+    },
+    {
+      student: 'Alex Johnson',
+      company: 'TechFlow Solutions',
+      role: 'Frontend UI/UX Intern',
+      status: 'Submitted',
+    },
+    {
+      student: 'Marta Bekele',
+      company: 'Addis Cloud Systems',
+      role: 'Backend DevOps Intern',
+      status: 'Forwarded',
+    },
+  ];
 
   return (
-    <div className="min-h-screen bg-[#101735] text-[#F5F8FC] p-6 md:p-12">
-      <div className="max-w-4xl mx-auto space-y-8">
-        <div className="flex items-center justify-between pb-6 border-b border-[#1C2948]">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#00C8FF] to-[#8CEBFF] flex items-center justify-center text-[#101735] font-bold">
-              <Briefcase className="w-6 h-6" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold">CampusBridge Workspace</h1>
-              <p className="text-xs text-[#00C8FF] font-medium">Coordinator Protected Area</p>
-            </div>
-          </div>
+    <AppLayout>
+      <div className="space-y-6">
+        <WelcomeBanner
+          quote="“Bridging university ambition with industry innovation.”"
+          tags={[
+            { label: 'Corporate Relations', icon: Building2 },
+            { label: 'Internship Placements', icon: Briefcase },
+            { label: 'Curriculum Coordinator', icon: BookOpen },
+          ]}
+        />
 
-          <button
-            onClick={handleLogout}
-            className="flex items-center space-x-2 px-4 py-2 rounded-xl bg-[#1C2948] hover:bg-rose-500/20 text-[#8CEBFF] hover:text-rose-400 border border-[#1C2948] hover:border-rose-500/30 transition-all text-xs font-semibold"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>Sign Out</span>
-          </button>
+        {/* 4 Coordinator Metrics */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            icon={BookOpen}
+            label="Active Courses"
+            value="12"
+            trend="+2"
+            accentColor="#00C8FF"
+            sparklineData={[8, 9, 9, 10, 11, 11, 12]}
+          />
+          <StatCard
+            icon={Building2}
+            label="Partner Companies"
+            value="8"
+            trend="+1 verified"
+            accentColor="#10B981"
+            sparklineData={[4, 5, 5, 6, 7, 7, 8]}
+          />
+          <StatCard
+            icon={Briefcase}
+            label="Open Internships"
+            value="15"
+            trend="4 ending soon"
+            accentColor="#8CEBFF"
+            sparklineData={[10, 12, 11, 14, 13, 14, 15]}
+          />
+          <StatCard
+            icon={FileText}
+            label="Pending Applications"
+            value="24"
+            trend="Ready to forward"
+            accentColor="#F59E0B"
+            sparklineData={[12, 15, 18, 20, 22, 21, 24]}
+          />
         </div>
 
-        <div className="p-8 rounded-2xl bg-[#1C2948]/60 border border-[#00C8FF]/30 backdrop-blur-md shadow-glow-cyan-sm space-y-4">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#00C8FF]/10 text-[#00C8FF] border border-[#00C8FF]/30">
-            <Sparkles className="w-3.5 h-3.5" />
-            Phase 3 RBAC Active
-          </div>
-
-          <h2 className="text-3xl font-extrabold text-white">
-            Welcome, {user?.name || 'Coordinator'}!
-          </h2>
-          <p className="text-sm text-[#8CEBFF]/80 max-w-xl">
-            You are securely authenticated as an internship & course coordinator. 
-            Protected routing has validated your coordinator privileges.
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
-            <div className="p-4 rounded-xl bg-[#101735]/70 border border-[#1C2948]">
-              <span className="text-[10px] uppercase font-bold text-gray-400">Email Address</span>
-              <p className="text-sm font-semibold text-white truncate">{user?.email}</p>
-            </div>
-            <div className="p-4 rounded-xl bg-[#101735]/70 border border-[#1C2948]">
-              <span className="text-[10px] uppercase font-bold text-gray-400">Assigned Domain</span>
-              <p className="text-sm font-semibold text-[#8CEBFF] truncate">Partnerships & Courses</p>
-            </div>
-            <div className="p-4 rounded-xl bg-[#101735]/70 border border-[#1C2948]">
-              <span className="text-[10px] uppercase font-bold text-gray-400">Role Status</span>
-              <p className="text-sm font-bold text-emerald-400 flex items-center gap-1">
-                <CheckCircle2 className="w-4 h-4" /> Active Coordinator
-              </p>
-            </div>
-          </div>
-        </div>
+        {/* Applications Pipeline Table */}
+        <DashboardCard
+          title="Student Internship Applications Workflow"
+          subtitle="Review candidate CVs, forward to company contacts, and track placement decisions"
+          icon={FileText}
+          actionText="View All Applications"
+          actionLink="/coordinator/applications"
+        >
+          <DataTable
+            columns={APPLICATION_COLUMNS}
+            data={APPLICATION_DATA}
+            emptyTitle="No Pending Applications"
+            emptyMessage="All student applications have been processed."
+          />
+        </DashboardCard>
       </div>
-    </div>
+    </AppLayout>
   );
 }

@@ -1,72 +1,131 @@
 import React from 'react';
-import { useAuth } from '../../context/AuthContext.jsx';
-import { BookOpen, LogOut, CheckCircle2, Sparkles } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import AppLayout from '../../layouts/AppLayout.jsx';
+import WelcomeBanner from '../../components/dashboard/WelcomeBanner.jsx';
+import StatCard from '../../components/ui/StatCard.jsx';
+import DashboardCard from '../../components/ui/DashboardCard.jsx';
+import DataTable from '../../components/ui/DataTable.jsx';
+import Badge from '../../components/ui/Badge.jsx';
+import { 
+  BookOpen, 
+  CheckSquare, 
+  Users, 
+  AlertTriangle, 
+  GraduationCap, 
+  FileCheck2,
+  Clock 
+} from 'lucide-react';
 
 export default function InstructorDashboard() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const SUBMISSION_COLUMNS = [
+    { header: 'Student', accessor: 'student' },
+    { header: 'Course', accessor: 'course' },
+    { header: 'Assignment', accessor: 'assignment' },
+    {
+      header: 'Submitted',
+      accessor: 'submittedAt',
+      render: (val) => (
+        <span className="flex items-center text-xs text-gray-400 gap-1">
+          <Clock className="w-3 h-3 text-[#00C8FF]" /> {val}
+        </span>
+      ),
+    },
+    {
+      header: 'Action',
+      accessor: 'action',
+      render: () => (
+        <span className="text-xs font-semibold text-[#00C8FF] hover:underline cursor-pointer">
+          Grade Now &rarr;
+        </span>
+      ),
+    },
+  ];
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
-  };
+  const SUBMISSIONS_DATA = [
+    {
+      student: 'Sabrin Abdu',
+      course: 'CS301',
+      assignment: 'Hydraulics II Exam Prep',
+      submittedAt: '2 hours ago',
+    },
+    {
+      student: 'Michael Chen',
+      course: 'CS301',
+      assignment: 'Database Schema Design',
+      submittedAt: '4 hours ago',
+    },
+    {
+      student: 'Sara Youssef',
+      course: 'SE402',
+      assignment: 'REST API Implementation',
+      submittedAt: '1 day ago',
+    },
+  ];
 
   return (
-    <div className="min-h-screen bg-[#101735] text-[#F5F8FC] p-6 md:p-12">
-      <div className="max-w-4xl mx-auto space-y-8">
-        <div className="flex items-center justify-between pb-6 border-b border-[#1C2948]">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#8CEBFF] to-[#00C8FF] flex items-center justify-center text-[#101735] font-bold">
-              <BookOpen className="w-6 h-6" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold">CampusBridge Workspace</h1>
-              <p className="text-xs text-[#00C8FF] font-medium">Instructor Protected Area</p>
-            </div>
-          </div>
+    <AppLayout>
+      <div className="space-y-6">
+        <WelcomeBanner
+          quote="“Teaching is the greatest act of optimism.”"
+          tags={[
+            { label: 'Course Lead', icon: BookOpen },
+            { label: 'Evaluation Queue', icon: FileCheck2 },
+            { label: 'Mentor', icon: GraduationCap },
+          ]}
+        />
 
-          <button
-            onClick={handleLogout}
-            className="flex items-center space-x-2 px-4 py-2 rounded-xl bg-[#1C2948] hover:bg-rose-500/20 text-[#8CEBFF] hover:text-rose-400 border border-[#1C2948] hover:border-rose-500/30 transition-all text-xs font-semibold"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>Sign Out</span>
-          </button>
+        {/* 4 Instructor Metrics */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            icon={BookOpen}
+            label="Assigned Courses"
+            value="4"
+            trend="+1 this term"
+            accentColor="#00C8FF"
+            sparklineData={[2, 2, 3, 3, 3, 4, 4]}
+          />
+          <StatCard
+            icon={CheckSquare}
+            label="Submissions to Grade"
+            value="18"
+            trend="5 urgent"
+            accentColor="#F59E0B"
+            sparklineData={[10, 14, 12, 16, 20, 15, 18]}
+          />
+          <StatCard
+            icon={Users}
+            label="Enrolled Students"
+            value="142"
+            trend="+12"
+            accentColor="#10B981"
+            sparklineData={[110, 120, 125, 130, 135, 140, 142]}
+          />
+          <StatCard
+            icon={AlertTriangle}
+            label="At-Risk Students"
+            value="3"
+            trend="Low activity"
+            trendDirection="down"
+            accentColor="#F43F5E"
+            sparklineData={[5, 4, 4, 3, 4, 3, 3]}
+          />
         </div>
 
-        <div className="p-8 rounded-2xl bg-[#1C2948]/60 border border-[#8CEBFF]/30 backdrop-blur-md shadow-glow-cyan-sm space-y-4">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#8CEBFF]/10 text-[#8CEBFF] border border-[#8CEBFF]/30">
-            <Sparkles className="w-3.5 h-3.5" />
-            Phase 3 RBAC Active
-          </div>
-
-          <h2 className="text-3xl font-extrabold text-white">
-            Welcome, {user?.name || 'Instructor'}!
-          </h2>
-          <p className="text-sm text-[#8CEBFF]/80 max-w-xl">
-            You are securely authenticated as an instructor. 
-            Protected routing has validated your instructor credentials.
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
-            <div className="p-4 rounded-xl bg-[#101735]/70 border border-[#1C2948]">
-              <span className="text-[10px] uppercase font-bold text-gray-400">Email Address</span>
-              <p className="text-sm font-semibold text-white truncate">{user?.email}</p>
-            </div>
-            <div className="p-4 rounded-xl bg-[#101735]/70 border border-[#1C2948]">
-              <span className="text-[10px] uppercase font-bold text-gray-400">Department</span>
-              <p className="text-sm font-semibold text-[#8CEBFF] truncate">{user?.department || 'Faculty Staff'}</p>
-            </div>
-            <div className="p-4 rounded-xl bg-[#101735]/70 border border-[#1C2948]">
-              <span className="text-[10px] uppercase font-bold text-gray-400">Role Status</span>
-              <p className="text-sm font-bold text-emerald-400 flex items-center gap-1">
-                <CheckCircle2 className="w-4 h-4" /> Verified Instructor
-              </p>
-            </div>
-          </div>
-        </div>
+        {/* Grading Queue Table Card */}
+        <DashboardCard
+          title="Submissions Awaiting Grading"
+          subtitle="Assignments submitted by students ready for scoring and feedback"
+          icon={CheckSquare}
+          actionText="Open Full Queue"
+          actionLink="/instructor/grading"
+        >
+          <DataTable
+            columns={SUBMISSION_COLUMNS}
+            data={SUBMISSIONS_DATA}
+            emptyTitle="Grading Queue Clear"
+            emptyMessage="All student submissions have been evaluated."
+          />
+        </DashboardCard>
       </div>
-    </div>
+    </AppLayout>
   );
 }
