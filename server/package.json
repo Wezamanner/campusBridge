@@ -9,6 +9,7 @@
     "dev": "nodemon src/server.js",
     "test:models": "node src/utils/testModels.js",
     "test:auth": "node src/utils/testAuth.js",
+    "test:profile": "node src/utils/testProfile.js",
     "seed:users": "node src/utils/seedUsers.js"
   },
   "dependencies": {
@@ -18,7 +19,8 @@
     "express": "^5.3.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.12.0",
-    "morgan": "^1.12.1"
+    "morgan": "^1.12.1",
+    "multer": "^2.5.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
