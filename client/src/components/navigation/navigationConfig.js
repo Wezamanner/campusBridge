@@ -16,11 +16,13 @@ import {
   Globe,
   Settings,
   HelpCircle,
+  User,
 } from 'lucide-react';
 
 export const ROLE_NAVIGATION = {
   student: [
     { name: 'Dashboard', path: '/student/dashboard', icon: LayoutDashboard },
+    { name: 'Profile & CV', path: '/student/profile', icon: User },
     { name: 'Projects', path: '/student/projects', icon: FolderKanban },
     { name: 'Learning', path: '/student/courses', icon: BookOpen },
     { name: 'Tasks', path: '/student/tasks', icon: CheckSquare },

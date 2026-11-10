@@ -73,7 +73,7 @@ export default function UserProfileMenu({ className = '' }) {
           {/* Links */}
           <div className="p-2 space-y-1">
             <Link
-              to="/settings"
+              to={user?.role === 'student' ? '/student/profile' : '/settings'}
               onClick={() => setIsOpen(false)}
               className="flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-[#8CEBFF] hover:text-white hover:bg-[#101735]/60 transition-colors light:text-gray-700 light:hover:bg-gray-100"
             >
