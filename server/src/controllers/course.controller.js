@@ -85,12 +85,17 @@ export const getCourses = async (req, res, next) => {
           ? course.instructorId._id.toString()
           : course.instructorId?.toString() || null,
         instructor: course.instructorId && course.instructorId.name
-          ? {
-              id: course.instructorId._id.toString(),
-              name: course.instructorId.name,
-              email: course.instructorId.email,
-              department: course.instructorId.department || '',
-            }
+          ? (userRole === 'student'
+              ? {
+                  id: course.instructorId._id.toString(),
+                  name: course.instructorId.name,
+                }
+              : {
+                  id: course.instructorId._id.toString(),
+                  name: course.instructorId.name,
+                  email: course.instructorId.email,
+                  department: course.instructorId.department || '',
+                })
           : null,
         enrolledStudentsCount: enrolledCount,
         createdAt: course.createdAt,
@@ -181,12 +186,18 @@ export const getCourseById = async (req, res, next) => {
       : undefined;
 
     const instructorInfo = course.instructorId && course.instructorId.name
-      ? {
-          id: course.instructorId._id.toString(),
-          name: course.instructorId.name,
-          email: course.instructorId.email,
-          department: course.instructorId.department || '',
-        }
+      ? (userRole === 'student'
+          ? {
+              id: course.instructorId._id.toString(),
+              name: course.instructorId.name,
+              email: course.instructorId.email || '',
+            }
+          : {
+              id: course.instructorId._id.toString(),
+              name: course.instructorId.name,
+              email: course.instructorId.email,
+              department: course.instructorId.department || '',
+            })
       : null;
 
     const data = {
@@ -222,3 +233,85 @@ export const getCourseById = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * @route   POST /api/v1/courses/:id/enroll
+ * @desc    Enroll authenticated student in an active course (FR-05)
+ *          - Preconditions: Course must exist, course must be active, student not already enrolled
+ *          - Conflict Handling: Returns 409 Conflict if duplicate enrollment attempted
+ * @access  Protected (student)
+ */
+export const enrollCourse = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid course ID format.',
+      });
+    }
+
+    // 1. Verify target course exists
+    const course = await Course.findById(id);
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found.',
+      });
+    }
+
+    // 2. Verify course is currently active
+    if (course.status !== 'active') {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot enroll in an archived or inactive course.',
+      });
+    }
+
+    // 3. Derive student identity strictly from authenticated JWT
+    const studentId = req.user._id;
+
+    // 4. Duplicate enrollment check per SRS NFR-15 and student API spec
+    const existingEnrollment = await Enrollment.findOne({
+      studentId,
+      courseId: course._id,
+    });
+
+    if (existingEnrollment) {
+      return res.status(409).json({
+        success: false,
+        message: 'Student is already enrolled in this course.',
+      });
+    }
+
+    // 5. Create new enrollment record
+    const enrollment = await Enrollment.create({
+      studentId,
+      courseId: course._id,
+      enrolledAt: new Date(),
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: `Successfully enrolled in course ${course.code}.`,
+      data: {
+        enrollmentId: enrollment._id.toString(),
+        courseId: course._id.toString(),
+        studentId: studentId.toString(),
+        enrolledAt: enrollment.enrolledAt,
+      },
+      pagination: null,
+    });
+  } catch (error) {
+    // Catch MongoDB duplicate key race condition (E11000)
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: 'Student is already enrolled in this course.',
+      });
+    }
+    next(error);
+  }
+};
+

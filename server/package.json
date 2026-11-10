@@ -11,6 +11,7 @@
     "test:auth": "node src/utils/testAuth.js",
     "test:profile": "node src/utils/testProfile.js",
     "test:courses": "node src/utils/testCourseWorkspace.js",
+    "test:enrollment": "node src/utils/testStudentEnrollment.js",
     "seed:users": "node src/utils/seedUsers.js"
   },
   "dependencies": {

@@ -1,6 +1,6 @@
 import express from 'express';
-import { authenticate } from '../middleware/auth.js';
-import { getCourses, getCourseById } from '../controllers/course.controller.js';
+import { authenticate, authorize } from '../middleware/auth.js';
+import { getCourses, getCourseById, enrollCourse } from '../controllers/course.controller.js';
 
 const router = express.Router();
 
@@ -12,5 +12,8 @@ router.get('/', getCourses);
 
 // Get single course details and authorized student associations
 router.get('/:id', getCourseById);
+
+// Student course enrollment (FR-05)
+router.post('/:id/enroll', authorize('student'), enrollCourse);
 
 export default router;
