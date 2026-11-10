@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import AppLayout from '../../layouts/AppLayout.jsx';
 import WelcomeBanner from '../../components/dashboard/WelcomeBanner.jsx';
 import StatCard from '../../components/ui/StatCard.jsx';
@@ -12,54 +13,33 @@ import {
   AlertTriangle, 
   GraduationCap, 
   FileCheck2,
-  Clock 
+  Clock,
+  ArrowRight
 } from 'lucide-react';
+import { api } from '../../services/api.js';
 
 export default function InstructorDashboard() {
-  const SUBMISSION_COLUMNS = [
-    { header: 'Student', accessor: 'student' },
-    { header: 'Course', accessor: 'course' },
-    { header: 'Assignment', accessor: 'assignment' },
-    {
-      header: 'Submitted',
-      accessor: 'submittedAt',
-      render: (val) => (
-        <span className="flex items-center text-xs text-gray-400 gap-1">
-          <Clock className="w-3 h-3 text-[#00C8FF]" /> {val}
-        </span>
-      ),
-    },
-    {
-      header: 'Action',
-      accessor: 'action',
-      render: () => (
-        <span className="text-xs font-semibold text-[#00C8FF] hover:underline cursor-pointer">
-          Grade Now &rarr;
-        </span>
-      ),
-    },
-  ];
+  const [courses, setCourses] = useState([]);
+  const [loadingCourses, setLoadingCourses] = useState(true);
 
-  const SUBMISSIONS_DATA = [
-    {
-      student: 'Sabrin Abdu',
-      course: 'CS301',
-      assignment: 'Hydraulics II Exam Prep',
-      submittedAt: '2 hours ago',
-    },
-    {
-      student: 'Michael Chen',
-      course: 'CS301',
-      assignment: 'Database Schema Design',
-      submittedAt: '4 hours ago',
-    },
-    {
-      student: 'Sara Youssef',
-      course: 'SE402',
-      assignment: 'REST API Implementation',
-      submittedAt: '1 day ago',
-    },
-  ];
+  useEffect(() => {
+    const loadCourses = async () => {
+      try {
+        const res = await api.get('/courses');
+        if (res.success && Array.isArray(res.data)) {
+          setCourses(res.data);
+        }
+      } catch (err) {
+        console.error('Failed to load instructor courses for dashboard:', err);
+      } finally {
+        setLoadingCourses(false);
+      }
+    };
+    loadCourses();
+  }, []);
+
+  const totalAssigned = courses.length;
+  const totalEnrolled = courses.reduce((sum, c) => sum + (c.enrolledStudentsCount || 0), 0);
 
   return (
     <AppLayout>
@@ -78,52 +58,88 @@ export default function InstructorDashboard() {
           <StatCard
             icon={BookOpen}
             label="Assigned Courses"
-            value="4"
-            trend="+1 this term"
+            value={loadingCourses ? '...' : String(totalAssigned)}
+            trend={totalAssigned > 0 ? `${totalAssigned} active portfolio` : '0 assigned'}
             accentColor="#00C8FF"
-            sparklineData={[2, 2, 3, 3, 3, 4, 4]}
+            sparklineData={[1, 2, 2, 3, 3, 4, Math.max(totalAssigned, 1)]}
           />
           <StatCard
             icon={CheckSquare}
             label="Submissions to Grade"
-            value="18"
-            trend="5 urgent"
+            value="Phase 8"
+            trend="Grading Queue"
             accentColor="#F59E0B"
-            sparklineData={[10, 14, 12, 16, 20, 15, 18]}
+            sparklineData={[0, 0, 0, 0, 0, 0, 0]}
           />
           <StatCard
             icon={Users}
             label="Enrolled Students"
-            value="142"
-            trend="+12"
+            value={loadingCourses ? '...' : String(totalEnrolled)}
+            trend={totalEnrolled > 0 ? `${totalEnrolled} total roster` : '0 enrolled'}
             accentColor="#10B981"
-            sparklineData={[110, 120, 125, 130, 135, 140, 142]}
+            sparklineData={[0, 10, 25, 40, 60, 90, Math.max(totalEnrolled, 1)]}
           />
           <StatCard
             icon={AlertTriangle}
             label="At-Risk Students"
-            value="3"
-            trend="Low activity"
-            trendDirection="down"
+            value="Phase 10"
+            trend="Monitoring Queue"
             accentColor="#F43F5E"
-            sparklineData={[5, 4, 4, 3, 4, 3, 3]}
+            sparklineData={[0, 0, 0, 0, 0, 0, 0]}
           />
         </div>
 
-        {/* Grading Queue Table Card */}
+        {/* Assigned Courses Portfolio Card */}
         <DashboardCard
-          title="Submissions Awaiting Grading"
-          subtitle="Assignments submitted by students ready for scoring and feedback"
-          icon={CheckSquare}
-          actionText="Open Full Queue"
-          actionLink="/instructor/grading"
+          title="My Teaching Courses"
+          subtitle="Courses assigned to you for teaching and instruction"
+          icon={BookOpen}
+          actionText="View All Courses"
+          actionLink="/instructor/courses"
         >
-          <DataTable
-            columns={SUBMISSION_COLUMNS}
-            data={SUBMISSIONS_DATA}
-            emptyTitle="Grading Queue Clear"
-            emptyMessage="All student submissions have been evaluated."
-          />
+          {loadingCourses ? (
+            <div className="p-8 text-center text-xs text-gray-400">Loading courses...</div>
+          ) : courses.length === 0 ? (
+            <div className="p-8 text-center space-y-2">
+              <BookOpen className="w-8 h-8 text-gray-500 mx-auto" />
+              <p className="text-sm font-semibold text-gray-300">No Courses Assigned Yet</p>
+              <p className="text-xs text-gray-400">Academic Coordinators assign courses to instructors.</p>
+            </div>
+          ) : (
+            <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {courses.slice(0, 3).map((course) => (
+                <Link
+                  key={course.id}
+                  to={`/instructor/courses/${course.id}`}
+                  className="p-4 rounded-xl border border-[#1C2948] hover:border-[#00C8FF]/50 bg-[#101735]/60 hover:bg-[#101735] transition-all flex flex-col justify-between space-y-3 group"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-[#00C8FF]/15 text-[#00C8FF]">
+                        {course.code}
+                      </span>
+                      <Badge variant={course.status === 'active' ? 'success' : 'neutral'} size="sm">
+                        {course.status}
+                      </Badge>
+                    </div>
+                    <h4 className="font-bold text-sm text-white group-hover:text-[#00C8FF] transition-colors truncate">
+                      {course.title}
+                    </h4>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs text-gray-400 pt-2 border-t border-[#1C2948]">
+                    <span className="flex items-center gap-1">
+                      <Users className="w-3.5 h-3.5 text-[#00C8FF]" />
+                      <span>{course.enrolledStudentsCount || 0} enrolled</span>
+                    </span>
+                    <span className="text-[#00C8FF] font-semibold group-hover:translate-x-0.5 transform transition-transform">
+                      Workspace &rarr;
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </DashboardCard>
       </div>
     </AppLayout>
