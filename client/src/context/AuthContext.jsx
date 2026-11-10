@@ -95,6 +95,18 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const updateCurrentUser = (partialUser) => {
+    setUser((prev) => {
+      const updated = { ...prev, ...partialUser };
+      try {
+        localStorage.setItem('campusbridge_user', JSON.stringify(updated));
+      } catch {
+        // ignore storage errors
+      }
+      return updated;
+    });
+  };
+
   const value = {
     user,
     token,
@@ -104,6 +116,7 @@ export function AuthProvider({ children }) {
     login,
     register,
     logout,
+    updateCurrentUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
