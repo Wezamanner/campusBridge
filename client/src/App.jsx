@@ -6,6 +6,7 @@ import ProtectedRoute from './routes/ProtectedRoute.jsx';
 import LoginPage from './pages/public/LoginPage.jsx';
 import RegisterPage from './pages/public/RegisterPage.jsx';
 import StudentDashboard from './pages/student/StudentDashboard.jsx';
+import StudentProfilePage from './pages/student/StudentProfilePage.jsx';
 import InstructorDashboard from './pages/instructor/InstructorDashboard.jsx';
 import CoordinatorDashboard from './pages/coordinator/CoordinatorDashboard.jsx';
 import AdminDashboard from './pages/admin/AdminDashboard.jsx';
@@ -332,6 +333,14 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={['student']}>
                 <StudentDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/profile"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <StudentProfilePage />
               </ProtectedRoute>
             }
           />
