@@ -329,8 +329,8 @@ paths:
   # ==========================================
   /progress:
     get:
-      summary: View learning progress and at-risk indicators
-      description: Returns calculated progress from submitted work (FR-09) and flags students at risk (UC-I03).
+      summary: View learning progress
+      description: Returns calculated progress from submitted work (FR-09, planned Phase 9). At-risk student monitoring is decoupled and implemented under /instructor/at-risk (Phase 10, UC-I03).
       tags: [Progress & Achievements]
       security:
         - bearerAuth: []
@@ -338,13 +338,232 @@ paths:
         - name: courseId
           in: query
           schema: { type: string }
-        - name: flagged
-          in: query
-          description: Flag at-risk students for low progress, missed deadlines, inactivity (UC-I03)
-          schema: { type: boolean }
       responses:
         '200':
           description: Progress statistics retrieved
+
+  # ==========================================
+  # AT-RISK STUDENT MONITORING (UC-I03, FR-16, FR-44) - Phase 10
+  # ==========================================
+  /instructor/at-risk/summary:
+    get:
+      summary: Retrieve at-risk monitoring summary statistics
+      description: Returns lightweight monitoring counts (totalEnrolled, totalAtRisk, totalSafe) and provider data availability for assigned courses (FR-16, FR-44). Evaluates unique students.
+      tags: [At-Risk Monitoring]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: At-risk monitoring summary retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  message: { type: string }
+                  data:
+                    type: object
+                    properties:
+                      summary:
+                        type: object
+                        properties:
+                          totalEnrolled: { type: integer, example: 24 }
+                          totalAtRisk: { type: integer, example: 3 }
+                          totalSafe: { type: integer, example: 21 }
+                          evaluatedAt: { type: string, format: date-time }
+                      dataAvailability:
+                        type: object
+                  pagination: { type: object, nullable: true }
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /instructor/at-risk/indicators:
+    get:
+      summary: Retrieve available risk indicator definitions and statuses
+      description: Returns metadata describing all defined risk indicators, their authoritative data sources, and missing phase dependencies (UC-I03, FR-16).
+      tags: [At-Risk Monitoring]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Available risk indicators retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  message: { type: string }
+                  data:
+                    type: object
+                    properties:
+                      indicators:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id: { type: string }
+                            label: { type: string }
+                            description: { type: string }
+                            srsReference: { type: string }
+                            dataSource: { type: string }
+                            available: { type: boolean }
+                            blockedBy:
+                              type: array
+                              nullable: true
+                              items: { type: string }
+                  pagination: { type: object, nullable: true }
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /instructor/at-risk:
+    get:
+      summary: List at-risk students across assigned courses
+      description: Returns students flagged for inactivity, low progress, or missed deadlines within courses assigned to authenticated instructor (UC-I03, FR-16, FR-44).
+      tags: [At-Risk Monitoring]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: courseCode
+          in: query
+          description: Filter students by specific course code (e.g. CS301)
+          schema: { type: string }
+        - name: flag
+          in: query
+          description: Filter by indicator flag state
+          schema: { type: string, enum: [lowProgress, missedDeadlines, inactivity] }
+      responses:
+        '200':
+          description: At-risk students retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  message: { type: string }
+                  data:
+                    type: object
+                    properties:
+                      atRiskStudents:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            studentId: { type: string }
+                            studentName: { type: string }
+                            studentEmail: { type: string }
+                            program: { type: string }
+                            year: { type: integer }
+                            courseId: { type: string }
+                            courseCode: { type: string }
+                            courseTitle: { type: string }
+                            enrolledAt: { type: string, format: date-time }
+                            flagCount: { type: integer }
+                            flags:
+                              type: object
+                              properties:
+                                lowProgress: { type: string, enum: [flagged, not_flagged, insufficient_data] }
+                                missedDeadlines: { type: string, enum: [flagged, not_flagged, insufficient_data] }
+                                inactivity: { type: string, enum: [flagged, not_flagged, insufficient_data] }
+                            riskReasons:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  indicator: { type: string }
+                                  reason: { type: string }
+                      summary:
+                        type: object
+                        properties:
+                          totalEnrolled: { type: integer }
+                          totalAtRisk: { type: integer }
+                          totalSafe: { type: integer }
+                          evaluatedAt: { type: string, format: date-time }
+                      dataAvailability:
+                        type: object
+                  pagination: { type: object, nullable: true }
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /instructor/at-risk/{studentId}:
+    get:
+      summary: Individual student risk assessment
+      description: Returns risk assessment and breakdown for a specific student in an instructor-assigned course (UC-I03, FR-16).
+      tags: [At-Risk Monitoring]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          description: MongoDB ObjectId of the student
+          schema: { type: string }
+        - name: courseId
+          in: query
+          required: true
+          description: MongoDB ObjectId of the course assigned to the instructor
+          schema: { type: string }
+      responses:
+        '200':
+          description: Student risk assessment retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  message: { type: string }
+                  data:
+                    type: object
+                    properties:
+                      studentId: { type: string }
+                      studentName: { type: string }
+                      studentEmail: { type: string }
+                      program: { type: string }
+                      year: { type: integer }
+                      department: { type: string }
+                      courseId: { type: string }
+                      courseCode: { type: string }
+                      courseTitle: { type: string }
+                      isAtRisk: { type: boolean }
+                      flagCount: { type: integer }
+                      flags:
+                        type: object
+                        properties:
+                          lowProgress: { type: string, enum: [flagged, not_flagged, insufficient_data] }
+                          missedDeadlines: { type: string, enum: [flagged, not_flagged, insufficient_data] }
+                          inactivity: { type: string, enum: [flagged, not_flagged, insufficient_data] }
+                      riskReasons:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            indicator: { type: string }
+                            reason: { type: string }
+                      indicatorDetails:
+                        type: object
+                      evaluatedAt: { type: string, format: date-time }
+                      dataAvailability:
+                        type: object
+                  pagination: { type: object, nullable: true }
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
 
   /achievements:
     get:

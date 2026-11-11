@@ -370,30 +370,186 @@
 
 ---
 
-### 5.2. Monitor At-Risk Students (UC-I03, FR-16, FR-44)
-- **Endpoint**: `GET /api/v1/progress?flagged=true` (or dashboard at-risk figure query)
-- **SRS Traceability**: UC-I03, FR-16, FR-44
-- **SRS Definition (UC-I03)**:
-  > *"The system lists flagged students (low progress, missed deadlines, inactivity). Send a message if needed. Alternative flow: No students at risk: a message is shown. Postconditions: The instructor is informed."*
-  >
-  > *(Note: The SRS does not define numeric thresholds. Arbitrary cutoff values like 50% or 60% are excluded from the approved API contract per compliance audit).*
+### 5.2. Monitor At-Risk Students (UC-I03, FR-16, FR-44) — Phase 10
+
+> **Decoupled Architecture Note**: In Phase 10, at-risk monitoring is decoupled from the future Phase 9 Progress API (`GET /api/v1/progress`). Phase 10 provides dedicated endpoints under `/api/v1/instructor/at-risk` to evaluate available authoritative data without depending on or mocking Phase 9 progress analytics.
+
+#### 5.2.1. Retrieve At-Risk Monitoring Summary
+- **Endpoint**: `GET /api/v1/instructor/at-risk/summary`
+- **SRS Traceability**: FR-16, FR-44
+- **Role Permissions**: `instructor`
+- **Description**: Returns lightweight monitoring statistics (`totalEnrolled`, `totalAtRisk`, `totalSafe`) and a data availability report for instructor dashboard stat cards. Evaluates unique students across the instructor's assigned courses.
 - **Response `200 OK`**:
   ```json
   {
     "success": true,
-    "message": "Flagged at-risk students retrieved.",
-    "data": [
-      {
-        "studentId": "67331811e4b02a1b9c8e33aa",
-        "studentName": "Jordan Hayes",
-        "courseCode": "CS301",
-        "flags": {
-          "lowProgress": true,
-          "missedDeadlines": true,
-          "inactivity": true
-        }
+    "message": "At-risk monitoring summary retrieved.",
+    "data": {
+      "summary": {
+        "totalEnrolled": 24,
+        "totalAtRisk": 3,
+        "totalSafe": 21,
+        "evaluatedAt": "2026-11-11T09:30:00.000Z"
+      },
+      "dataAvailability": {
+        "enrollment": { "available": true, "description": "Student enrollment data is available." },
+        "activity": { "available": true, "description": "Platform activity log is available." },
+        "progress": { "available": false, "description": "No progress records found.", "blockedBy": ["Phase 7: Student Submissions", "Phase 8: Grading Queue"] },
+        "submissionHistory": { "available": false, "description": "No submission records found.", "blockedBy": ["Phase 6: Assignment Authoring", "Phase 7: Student Submissions"] },
+        "assignmentPerformance": { "available": false, "blockedBy": ["Phase 6: Assignment Authoring", "Phase 7: Student Submissions", "Phase 8: Grading Queue"] },
+        "progressAnalytics": { "available": false, "blockedBy": ["Phase 9: Student Progress Analytics"] }
       }
-    ],
+    },
+    "pagination": null
+  }
+  ```
+
+#### 5.2.2. Retrieve Available Risk Indicators Metadata
+- **Endpoint**: `GET /api/v1/instructor/at-risk/indicators`
+- **SRS Traceability**: UC-I03, FR-16
+- **Role Permissions**: `instructor`
+- **Description**: Returns metadata describing all defined risk indicators, their authoritative data sources, and missing phase dependencies.
+- **Response `200 OK`**:
+  ```json
+  {
+    "success": true,
+    "message": "Available risk indicators retrieved.",
+    "data": {
+      "indicators": [
+        {
+          "id": "inactivity",
+          "label": "Platform Inactivity",
+          "description": "Student has no recorded platform activity in the ActivityLog.",
+          "srsReference": "UC-I03 (\"inactivity\")",
+          "dataSource": "ActivityLog collection",
+          "available": true,
+          "blockedBy": null
+        },
+        {
+          "id": "lowProgress",
+          "label": "Low Course Progress",
+          "description": "Student has 0% progress in a course where assignments exist.",
+          "srsReference": "UC-I03 (\"low progress\"), FR-09",
+          "dataSource": "Progress collection (populated by Phase 7 & 8)",
+          "available": true,
+          "blockedBy": ["Phase 7: Student Submissions", "Phase 8: Grading Queue"]
+        },
+        {
+          "id": "missedDeadlines",
+          "label": "Missed Assignment Deadlines",
+          "description": "Student has at least one past-deadline assignment with no submission.",
+          "srsReference": "UC-I03 (\"missed deadlines\"), FR-06, FR-07",
+          "dataSource": "Assignment + Submission collections",
+          "available": true,
+          "blockedBy": ["Phase 6: Assignment Authoring", "Phase 7: Student Submissions"]
+        }
+      ]
+    },
+    "pagination": null
+  }
+  ```
+
+#### 5.2.3. List At-Risk Students
+- **Endpoint**: `GET /api/v1/instructor/at-risk`
+- **SRS Traceability**: UC-I03, FR-16, FR-44
+- **Role Permissions**: `instructor` (scoped strictly to instructor's assigned courses)
+- **Query Parameters**:
+  - `courseCode`: Optional course code filter (e.g. `CS301`).
+  - `flag`: Optional flag filter (`lowProgress`, `missedDeadlines`, `inactivity`).
+- **Response `200 OK`**:
+  ```json
+  {
+    "success": true,
+    "message": "1 at-risk student(s) identified across assigned courses.",
+    "data": {
+      "atRiskStudents": [
+        {
+          "studentId": "67331811e4b02a1b9c8e33aa",
+          "studentName": "Jordan Hayes",
+          "studentEmail": "jordan.hayes@campusbridge.edu",
+          "program": "Software Engineering",
+          "year": 2,
+          "courseId": "6732f1a2e4b02a1b9c8d3e4f",
+          "courseCode": "CS301",
+          "courseTitle": "Full-Stack Web Development",
+          "enrolledAt": "2026-11-09T18:00:00.000Z",
+          "flagCount": 1,
+          "flags": {
+            "lowProgress": "insufficient_data",
+            "missedDeadlines": "insufficient_data",
+            "inactivity": "flagged"
+          },
+          "riskReasons": [
+            {
+              "indicator": "inactivity",
+              "reason": "No platform activity has been recorded for this student."
+            }
+          ]
+        }
+      ],
+      "summary": {
+        "totalEnrolled": 24,
+        "totalAtRisk": 1,
+        "totalSafe": 23,
+        "evaluatedAt": "2026-11-11T09:30:00.000Z"
+      },
+      "dataAvailability": { ... }
+    },
+    "pagination": null
+  }
+  ```
+
+#### 5.2.4. Individual Student Risk Assessment
+- **Endpoint**: `GET /api/v1/instructor/at-risk/:studentId?courseId=:courseId`
+- **SRS Traceability**: UC-I03, FR-16
+- **Role Permissions**: `instructor`
+- **Query Parameters**:
+  - `courseId`: Required MongoDB ObjectId of course assigned to the instructor.
+- **Path Parameters**:
+  - `studentId`: Required MongoDB ObjectId of student enrolled in the course.
+- **Security Check**: Returns `404 Not Found` if course is not assigned to the authenticated instructor or if the student is not enrolled in the course.
+- **Response `200 OK`**:
+  ```json
+  {
+    "success": true,
+    "message": "At-risk assessment retrieved for Jordan Hayes in CS301.",
+    "data": {
+      "studentId": "67331811e4b02a1b9c8e33aa",
+      "studentName": "Jordan Hayes",
+      "studentEmail": "jordan.hayes@campusbridge.edu",
+      "program": "Software Engineering",
+      "year": 2,
+      "courseId": "6732f1a2e4b02a1b9c8d3e4f",
+      "courseCode": "CS301",
+      "courseTitle": "Full-Stack Web Development",
+      "enrolledAt": "2026-11-09T18:00:00.000Z",
+      "isAtRisk": true,
+      "flagCount": 1,
+      "flags": {
+        "lowProgress": "insufficient_data",
+        "missedDeadlines": "insufficient_data",
+        "inactivity": "flagged"
+      },
+      "indicators": {
+        "inactivity": {
+          "status": "flagged",
+          "reason": "No platform activity has been recorded for this student.",
+          "lastActivityAt": null
+        },
+        "lowProgress": {
+          "status": "insufficient_data",
+          "reason": "No progress record exists for this student in this course.",
+          "progressData": null
+        },
+        "missedDeadlines": {
+          "status": "insufficient_data",
+          "reason": "No assignment records found for this course.",
+          "missedCount": 0
+        }
+      },
+      "assessedAt": "2026-11-11T09:30:00.000Z",
+      "dataAvailability": { ... }
+    },
     "pagination": null
   }
   ```

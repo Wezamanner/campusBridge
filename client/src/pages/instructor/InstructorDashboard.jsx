@@ -1,65 +1,100 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import AppLayout from '../../layouts/AppLayout.jsx';
 import WelcomeBanner from '../../components/dashboard/WelcomeBanner.jsx';
 import StatCard from '../../components/ui/StatCard.jsx';
 import DashboardCard from '../../components/ui/DashboardCard.jsx';
 import DataTable from '../../components/ui/DataTable.jsx';
-import Badge from '../../components/ui/Badge.jsx';
-import { 
-  BookOpen, 
-  CheckSquare, 
-  Users, 
-  AlertTriangle, 
-  GraduationCap, 
+import LoadingState from '../../components/ui/LoadingState.jsx';
+import { RiskFlagsRow } from '../../components/atRisk/RiskFlagBadge.jsx';
+import { fetchAtRiskSummary, fetchAtRiskStudents } from '../../services/atRisk.js';
+import {
+  BookOpen,
+  CheckSquare,
+  Users,
+  AlertTriangle,
+  GraduationCap,
   FileCheck2,
-  Clock 
+  ShieldAlert,
+  ArrowRight,
 } from 'lucide-react';
 
+/**
+ * InstructorDashboard — Phase 10 updated
+ *
+ * SRS Traceability:
+ *   FR-16 "instructors (grading queue, at-risk students, courses)"
+ *   FR-44 "grading and risk figures for instructors"
+ *   UC-I03 "Monitor at-risk students"
+ *
+ * At-risk stat card now fetches live data from the Phase 10 monitoring endpoint.
+ * Grading queue stat card remains a placeholder (Phase 8 not yet active).
+ * No hardcoded student or submission data is used.
+ */
 export default function InstructorDashboard() {
-  const SUBMISSION_COLUMNS = [
-    { header: 'Student', accessor: 'student' },
-    { header: 'Course', accessor: 'course' },
-    { header: 'Assignment', accessor: 'assignment' },
+  const [atRiskData, setAtRiskData] = useState({ summary: null, students: [], loading: true, error: null });
+
+  useEffect(() => {
+    async function loadAtRiskData() {
+      try {
+        // Fetch monitoring summary for stat card (FR-16, FR-44)
+        const summaryResult = await fetchAtRiskSummary();
+        // Fetch top at-risk students for dashboard preview
+        const listResult = await fetchAtRiskStudents();
+
+        setAtRiskData({
+          summary: summaryResult.summary,
+          students: (listResult.atRiskStudents || []).slice(0, 5), // Show top 5 on dashboard
+          dataAvailability: listResult.dataAvailability,
+          loading: false,
+          error: null,
+        });
+      } catch (err) {
+        setAtRiskData((prev) => ({ ...prev, loading: false, error: err.message }));
+      }
+    }
+    loadAtRiskData();
+  }, []);
+
+  const AT_RISK_COLUMNS = [
     {
-      header: 'Submitted',
-      accessor: 'submittedAt',
-      render: (val) => (
-        <span className="flex items-center text-xs text-gray-400 gap-1">
-          <Clock className="w-3 h-3 text-[#00C8FF]" /> {val}
-        </span>
+      header: 'Student',
+      accessor: 'studentName',
+      render: (val, row) => (
+        <div>
+          <p className="text-sm font-semibold text-white">{val}</p>
+          <p className="text-xs text-gray-400">{row.studentEmail}</p>
+        </div>
       ),
     },
     {
-      header: 'Action',
-      accessor: 'action',
-      render: () => (
-        <span className="text-xs font-semibold text-[#00C8FF] hover:underline cursor-pointer">
-          Grade Now &rarr;
-        </span>
+      header: 'Course',
+      accessor: 'courseCode',
+      render: (val) => (
+        <span className="font-mono text-xs font-semibold text-[#00C8FF]">{val}</span>
+      ),
+    },
+    {
+      header: 'Flags',
+      accessor: 'flags',
+      render: (val) => <RiskFlagsRow flags={val} size="sm" />,
+    },
+    {
+      header: '',
+      accessor: '_link',
+      render: (_, row) => (
+        <Link
+          to={`/instructor/students?highlight=${row.studentId}`}
+          className="text-xs font-semibold text-[#00C8FF] hover:underline flex items-center gap-1"
+        >
+          View <ArrowRight className="w-3 h-3" />
+        </Link>
       ),
     },
   ];
 
-  const SUBMISSIONS_DATA = [
-    {
-      student: 'Sabrin Abdu',
-      course: 'CS301',
-      assignment: 'Hydraulics II Exam Prep',
-      submittedAt: '2 hours ago',
-    },
-    {
-      student: 'Michael Chen',
-      course: 'CS301',
-      assignment: 'Database Schema Design',
-      submittedAt: '4 hours ago',
-    },
-    {
-      student: 'Sara Youssef',
-      course: 'SE402',
-      assignment: 'REST API Implementation',
-      submittedAt: '1 day ago',
-    },
-  ];
+  const atRiskCount = atRiskData.summary?.totalAtRisk ?? '—';
+  const totalEnrolled = atRiskData.summary?.totalEnrolled ?? '—';
 
   return (
     <AppLayout>
@@ -73,57 +108,79 @@ export default function InstructorDashboard() {
           ]}
         />
 
-        {/* 4 Instructor Metrics */}
+        {/* Stat Cards — FR-16, FR-44 */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             icon={BookOpen}
             label="Assigned Courses"
-            value="4"
-            trend="+1 this term"
+            value="—"
+            trend="Phase 3 data"
             accentColor="#00C8FF"
-            sparklineData={[2, 2, 3, 3, 3, 4, 4]}
+            sparklineData={[1, 1, 1, 1]}
           />
           <StatCard
             icon={CheckSquare}
             label="Submissions to Grade"
-            value="18"
-            trend="5 urgent"
+            value="—"
+            trend="Phase 8 pending"
             accentColor="#F59E0B"
-            sparklineData={[10, 14, 12, 16, 20, 15, 18]}
+            sparklineData={[1, 1, 1, 1]}
           />
           <StatCard
             icon={Users}
             label="Enrolled Students"
-            value="142"
-            trend="+12"
+            value={atRiskData.loading ? '…' : String(totalEnrolled)}
+            trend="Across active courses"
             accentColor="#10B981"
-            sparklineData={[110, 120, 125, 130, 135, 140, 142]}
+            sparklineData={[1]}
           />
           <StatCard
             icon={AlertTriangle}
             label="At-Risk Students"
-            value="3"
-            trend="Low activity"
-            trendDirection="down"
+            value={atRiskData.loading ? '…' : String(atRiskCount)}
+            trend={atRiskData.loading ? '' : atRiskCount === 0 ? 'All clear' : 'Needs attention'}
+            trendDirection={atRiskCount > 0 ? 'down' : 'up'}
             accentColor="#F43F5E"
-            sparklineData={[5, 4, 4, 3, 4, 3, 3]}
+            sparklineData={[1]}
           />
         </div>
 
-        {/* Grading Queue Table Card */}
+        {/* At-Risk Students Preview (FR-16, UC-I03) */}
         <DashboardCard
-          title="Submissions Awaiting Grading"
-          subtitle="Assignments submitted by students ready for scoring and feedback"
-          icon={CheckSquare}
-          actionText="Open Full Queue"
-          actionLink="/instructor/grading"
+          title="At-Risk Students"
+          subtitle="Students with active risk flags across your assigned courses"
+          icon={ShieldAlert}
+          actionText="Open Monitoring Dashboard"
+          actionLink="/instructor/students"
         >
-          <DataTable
-            columns={SUBMISSION_COLUMNS}
-            data={SUBMISSIONS_DATA}
-            emptyTitle="Grading Queue Clear"
-            emptyMessage="All student submissions have been evaluated."
-          />
+          {atRiskData.loading ? (
+            <LoadingState count={3} />
+          ) : atRiskData.error ? (
+            <div className="p-4 text-sm text-rose-400 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4" />
+              <span>Failed to load at-risk data: {atRiskData.error}</span>
+            </div>
+          ) : atRiskData.students.length === 0 ? (
+            <div className="p-6 text-center space-y-2">
+              <CheckSquare className="w-8 h-8 text-emerald-400 mx-auto" />
+              <p className="text-sm font-semibold text-emerald-400">No At-Risk Students</p>
+              <p className="text-xs text-gray-400">
+                No students are currently flagged in your courses.
+                {atRiskData.dataAvailability?.progress?.available === false && (
+                  <span className="block mt-1 text-amber-400">
+                    Note: Some indicators show "No Data" — progress data requires Phase 7 &amp; 8 to be active.
+                  </span>
+                )}
+              </p>
+            </div>
+          ) : (
+            <DataTable
+              columns={AT_RISK_COLUMNS}
+              data={atRiskData.students}
+              emptyTitle="No At-Risk Students"
+              emptyMessage="All enrolled students are performing well."
+            />
+          )}
         </DashboardCard>
       </div>
     </AppLayout>

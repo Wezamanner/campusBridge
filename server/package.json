@@ -10,6 +10,7 @@
     "test:models": "node src/utils/testModels.js",
     "test:auth": "node src/utils/testAuth.js",
     "test:profile": "node src/utils/testProfile.js",
+    "test:at-risk": "node src/utils/testAtRisk.js",
     "seed:users": "node src/utils/seedUsers.js"
   },
   "dependencies": {
