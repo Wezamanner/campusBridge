@@ -1,7 +1,27 @@
 import mongoose from 'mongoose';
+import path from 'path';
+import fs from 'fs';
+import crypto from 'crypto';
 import { Course } from '../models/Course.js';
 import { Enrollment } from '../models/Enrollment.js';
 import { User } from '../models/User.js';
+import { resourcesDir } from '../middleware/upload.js';
+import { 
+  validateResourceInput, 
+  validateResourceFileSignature, 
+  RESOURCE_TYPE_ENUM,
+  ALLOWED_RESOURCE_MIME_BY_EXT
+} from '../utils/validation.js';
+
+const MIME_BY_EXT = {
+  '.pdf': 'application/pdf',
+  '.doc': 'application/msword',
+  '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  '.ppt': 'application/vnd.ms-powerpoint',
+  '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  '.zip': 'application/zip',
+  '.txt': 'text/plain',
+};
 
 /**
  * @route   GET /api/v1/courses
@@ -311,6 +331,404 @@ export const enrollCourse = async (req, res, next) => {
         message: 'Student is already enrolled in this course.',
       });
     }
+    next(error);
+  }
+};
+
+/**
+ * @route   POST /api/v1/courses/:id/resources
+ * @desc    Upload or link a course learning resource (Assigned Instructor only) (FR-04)
+ * @access  Protected (instructor)
+ */
+export const addCourseResource = async (req, res, next) => {
+  let stagedFilePath = req.file?.path;
+
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.isValidObjectId(id)) {
+      if (stagedFilePath && fs.existsSync(stagedFilePath)) {
+        fs.unlinkSync(stagedFilePath);
+      }
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid course ID format.',
+      });
+    }
+
+    const course = await Course.findById(id);
+    if (!course) {
+      if (stagedFilePath && fs.existsSync(stagedFilePath)) {
+        fs.unlinkSync(stagedFilePath);
+      }
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found.',
+      });
+    }
+
+    // Role & Ownership Guard: Only the assigned instructor can upload resources (FR-04)
+    if (course.instructorId.toString() !== req.user._id.toString()) {
+      if (stagedFilePath && fs.existsSync(stagedFilePath)) {
+        fs.unlinkSync(stagedFilePath);
+      }
+      return res.status(403).json({
+        success: false,
+        message: 'Only the assigned instructor can manage resources for this course.',
+      });
+    }
+
+    if (course.status !== 'active') {
+      if (stagedFilePath && fs.existsSync(stagedFilePath)) {
+        fs.unlinkSync(stagedFilePath);
+      }
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot add resources to an archived course.',
+      });
+    }
+
+    // Input validation
+    const validation = validateResourceInput(req.body, req.file);
+    if (!validation.valid) {
+      if (stagedFilePath && fs.existsSync(stagedFilePath)) {
+        fs.unlinkSync(stagedFilePath);
+      }
+      return res.status(400).json({
+        success: false,
+        message: 'Resource validation failed.',
+        errors: validation.errors,
+      });
+    }
+
+    let resourceUrl = req.body?.url ? req.body.url.trim() : '';
+    let resourceType = req.body?.type;
+    let storedFileName = null;
+
+    if (req.file) {
+      const ext = path.extname(req.file.originalname).toLowerCase();
+
+      // Check MIME type against extension
+      const validMimes = ALLOWED_RESOURCE_MIME_BY_EXT[ext];
+      if (!validMimes || !validMimes.includes(req.file.mimetype)) {
+        if (stagedFilePath && fs.existsSync(stagedFilePath)) {
+          fs.unlinkSync(stagedFilePath);
+        }
+        return res.status(415).json({
+          success: false,
+          message: `MIME type '${req.file.mimetype}' is not permitted for extension '${ext}'.`,
+        });
+      }
+
+      // Deep inspection of file content/signature
+      const isSignatureValid = validateResourceFileSignature(
+        req.file.path,
+        req.file.mimetype,
+        ext
+      );
+
+      if (!isSignatureValid) {
+        if (stagedFilePath && fs.existsSync(stagedFilePath)) {
+          fs.unlinkSync(stagedFilePath);
+        }
+        return res.status(415).json({
+          success: false,
+          message: `Uploaded file signature does not match declared format '${ext}'.`,
+        });
+      }
+
+      // Safe UUID-based filename
+      storedFileName = `res-${course._id.toString()}-${crypto.randomUUID()}${ext}`;
+      const destPath = path.resolve(resourcesDir, storedFileName);
+
+      // Move from tmpDir to resourcesDir
+      fs.renameSync(req.file.path, destPath);
+      stagedFilePath = null; // Staged file successfully moved
+
+      // Restrictive file permissions
+      fs.chmodSync(destPath, 0o600);
+
+      resourceUrl = `/uploads/resources/${storedFileName}`;
+
+      if (!resourceType) {
+        if (ext === '.pdf') resourceType = 'pdf';
+        else if (ext === '.ppt' || ext === '.pptx') resourceType = 'slides';
+        else if (ext === '.doc' || ext === '.docx' || ext === '.txt') resourceType = 'document';
+        else resourceType = 'other';
+      }
+    } else {
+      if (!resourceType) {
+        resourceType = 'link';
+      }
+    }
+
+    const newResource = {
+      title: req.body.title.trim(),
+      type: resourceType,
+      url: resourceUrl,
+      addedAt: new Date(),
+    };
+
+    course.resources.push(newResource);
+
+    try {
+      await course.save();
+    } catch (saveError) {
+      // Clean up permanent file if database save fails
+      if (storedFileName) {
+        const destPath = path.resolve(resourcesDir, storedFileName);
+        if (fs.existsSync(destPath)) {
+          fs.unlinkSync(destPath);
+        }
+      }
+      throw saveError;
+    }
+
+    const savedResource = course.resources[course.resources.length - 1];
+
+    return res.status(201).json({
+      success: true,
+      message: 'Course resource added successfully.',
+      data: {
+        _id: savedResource._id.toString(),
+        title: savedResource.title,
+        type: savedResource.type,
+        url: savedResource.url,
+        addedAt: savedResource.addedAt,
+      },
+      pagination: null,
+    });
+  } catch (error) {
+    if (stagedFilePath && fs.existsSync(stagedFilePath)) {
+      try {
+        fs.unlinkSync(stagedFilePath);
+      } catch (cleanupErr) {
+        console.warn(`[Resource Cleanup Warning] Failed to delete temp file: ${cleanupErr.message}`);
+      }
+    }
+    next(error);
+  }
+};
+
+/**
+ * @route   GET /api/v1/courses/:id/resources
+ * @desc    View course learning resources (Assigned Instructor or Enrolled Student) (FR-05)
+ * @access  Protected (student, instructor)
+ */
+export const getCourseResources = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userRole = req.user.role;
+    const userId = req.user._id;
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid course ID format.',
+      });
+    }
+
+    const course = await Course.findById(id);
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found.',
+      });
+    }
+
+    // Role-based authorization per security-access-control.md
+    if (userRole === 'instructor') {
+      if (course.instructorId.toString() !== userId.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: 'Instructors can only access resources for courses assigned to them.',
+        });
+      }
+    } else if (userRole === 'student') {
+      const isEnrolled = await Enrollment.findOne({
+        studentId: userId,
+        courseId: course._id,
+      });
+
+      if (!isEnrolled) {
+        return res.status(403).json({
+          success: false,
+          message: 'Course learning resources are accessible only to actively enrolled students.',
+        });
+      }
+    } else {
+      return res.status(403).json({
+        success: false,
+        message: 'Access restricted to assigned instructor or enrolled students.',
+      });
+    }
+
+    const resources = (course.resources || []).map((r) => ({
+      _id: r._id.toString(),
+      title: r.title,
+      type: r.type,
+      url: r.url,
+      addedAt: r.addedAt,
+    }));
+
+    return res.status(200).json({
+      success: true,
+      message: userRole === 'instructor' ? 'Resources retrieved.' : 'Course learning resources retrieved.',
+      data: resources,
+      pagination: null,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @route   GET /api/v1/courses/:id/resources/:resourceId/download
+ * @desc    Secure authenticated download of a course learning resource (FR-05, SEC-04)
+ * @access  Protected (student, instructor)
+ */
+export const downloadCourseResource = async (req, res, next) => {
+  try {
+    const { id, resourceId } = req.params;
+    const userRole = req.user.role;
+    const userId = req.user._id;
+
+    if (!mongoose.isValidObjectId(id) || !mongoose.isValidObjectId(resourceId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid course ID or resource ID format.',
+      });
+    }
+
+    const course = await Course.findById(id);
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found.',
+      });
+    }
+
+    // Role-based authorization per security-access-control.md
+    if (userRole === 'instructor') {
+      if (course.instructorId.toString() !== userId.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: 'Instructors can only access resources for courses assigned to them.',
+        });
+      }
+    } else if (userRole === 'student') {
+      const isEnrolled = await Enrollment.findOne({
+        studentId: userId,
+        courseId: course._id,
+      });
+
+      if (!isEnrolled) {
+        return res.status(403).json({
+          success: false,
+          message: 'Course learning resources are accessible only to actively enrolled students.',
+        });
+      }
+    } else {
+      return res.status(403).json({
+        success: false,
+        message: 'Access restricted to assigned instructor or enrolled students.',
+      });
+    }
+
+    const resource = course.resources.id(resourceId);
+    if (!resource) {
+      return res.status(404).json({
+        success: false,
+        message: 'Resource not found in this course.',
+      });
+    }
+
+    // If external link, validate and redirect safely
+    if (resource.url.startsWith('http://') || resource.url.startsWith('https://')) {
+      try {
+        const parsed = new URL(resource.url);
+        if (
+          (parsed.protocol === 'http:' || parsed.protocol === 'https:') &&
+          !parsed.username &&
+          !parsed.password &&
+          !/[\x00-\x1F\x7F\s]/.test(resource.url)
+        ) {
+          return res.redirect(resource.url);
+        }
+      } catch {}
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or unsafe redirect URL.',
+      });
+    }
+
+    // Stored file validation
+    const storedFilename = path.basename(resource.url);
+
+    // Reject suspicious path traversal attempts
+    if (
+      typeof storedFilename !== 'string' ||
+      storedFilename.includes('..') ||
+      storedFilename.includes('/') ||
+      storedFilename.includes('\\') ||
+      storedFilename.includes('\0')
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or suspicious resource storage path.',
+      });
+    }
+
+    const resolvedPath = path.resolve(resourcesDir, storedFilename);
+    const rel = path.relative(resourcesDir, resolvedPath);
+
+    if (
+      rel.startsWith('..') ||
+      path.isAbsolute(rel) ||
+      rel !== storedFilename ||
+      !fs.existsSync(resolvedPath)
+    ) {
+      return res.status(404).json({
+        success: false,
+        message: 'Resource file not found on disk.',
+      });
+    }
+
+    const stats = fs.lstatSync(resolvedPath);
+    if (!stats.isFile() || stats.isSymbolicLink()) {
+      return res.status(404).json({
+        success: false,
+        message: 'Resource file not found on disk.',
+      });
+    }
+
+    // Sanitize downloaded filename per RFC 6266 / RFC 5987
+    const ext = path.extname(storedFilename);
+    const rawBase = resource.title ? resource.title.replace(/[/\\?%*:|"<>]/g, '_').trim() : 'resource';
+    const downloadFilename = rawBase.endsWith(ext) ? rawBase : `${rawBase}${ext}`;
+    const encodedName = encodeURIComponent(downloadFilename);
+    const mimeType = MIME_BY_EXT[ext] || 'application/octet-stream';
+
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${downloadFilename}"; filename*=UTF-8''${encodedName}`
+    );
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+
+    const readStream = fs.createReadStream(resolvedPath);
+    readStream.on('error', (err) => {
+      console.error(`[Resource Download Stream Error] ${err.message}`);
+      if (!res.headersSent) {
+        return res.status(500).json({
+          success: false,
+          message: 'Error streaming resource file.',
+        });
+      }
+    });
+
+    return readStream.pipe(res);
+  } catch (error) {
     next(error);
   }
 };

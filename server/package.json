@@ -10,8 +10,10 @@
     "test:models": "node src/utils/testModels.js",
     "test:auth": "node src/utils/testAuth.js",
     "test:profile": "node src/utils/testProfile.js",
-    "test:courses": "node src/utils/testCourseWorkspace.js",
-    "test:enrollment": "node src/utils/testStudentEnrollment.js",
+    "test:courses": "PORT=5005 node src/utils/testCourseWorkspace.js",
+    "test:enrollment": "PORT=5005 node src/utils/testStudentEnrollment.js",
+    "test:resources": "PORT=5005 node src/utils/testCourseResources.js",
+    "test:assignments": "PORT=5005 node src/utils/testAssignmentManagement.js",
     "seed:users": "node src/utils/seedUsers.js"
   },
   "dependencies": {

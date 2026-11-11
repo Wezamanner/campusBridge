@@ -12,7 +12,14 @@ import {
   FileText, 
   Search,
   Sparkles,
-  Info
+  Info,
+  Upload,
+  Download,
+  ExternalLink,
+  File,
+  PlusCircle,
+  Link2,
+  FolderPlus
 } from 'lucide-react';
 import { api } from '../../services/api.js';
 import AppLayout from '../../layouts/AppLayout.jsx';
@@ -37,6 +44,22 @@ function formatDate(dateStr) {
   }
 }
 
+function formatDateTime(dateStr) {
+  if (!dateStr) return 'N/A';
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch {
+    return dateStr;
+  }
+}
+
 export default function InstructorCourseDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -45,6 +68,30 @@ export default function InstructorCourseDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [rosterSearch, setRosterSearch] = useState('');
+
+  // Course Resources States (Phase 5)
+  const [resources, setResources] = useState([]);
+  const [resourcesLoading, setResourcesLoading] = useState(false);
+  const [uploadMode, setUploadMode] = useState('file'); // 'file' | 'link'
+  const [resourceTitle, setResourceTitle] = useState('');
+  const [resourceType, setResourceType] = useState('document');
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [resourceLink, setResourceLink] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [resourceError, setResourceError] = useState(null);
+  const [resourceSuccess, setResourceSuccess] = useState(null);
+
+  // Assignment Management States (Phase 6, FR-06)
+  const [assignments, setAssignments] = useState([]);
+  const [assignmentsLoading, setAssignmentsLoading] = useState(false);
+  const [assignmentTitle, setAssignmentTitle] = useState('');
+  const [assignmentDescription, setAssignmentDescription] = useState('');
+  const [assignmentDeadline, setAssignmentDeadline] = useState('');
+  const [assignmentMaxScore, setAssignmentMaxScore] = useState(100);
+  const [assignmentAllowLate, setAssignmentAllowLate] = useState(false);
+  const [creatingAssignment, setCreatingAssignment] = useState(false);
+  const [assignmentError, setAssignmentError] = useState(null);
+  const [assignmentSuccess, setAssignmentSuccess] = useState(null);
 
   const fetchCourseDetails = async () => {
     setLoading(true);
@@ -64,11 +111,189 @@ export default function InstructorCourseDetailsPage() {
     }
   };
 
+  const fetchResources = async () => {
+    setResourcesLoading(true);
+    try {
+      const response = await api.get(`/courses/${id}/resources`);
+      if (response.success && Array.isArray(response.data)) {
+        setResources(response.data);
+      }
+    } catch (err) {
+      console.error('Fetch resources error:', err);
+    } finally {
+      setResourcesLoading(false);
+    }
+  };
+
+  const fetchAssignments = async () => {
+    setAssignmentsLoading(true);
+    try {
+      const response = await api.get(`/assignments?courseId=${id}`);
+      if (response.success && Array.isArray(response.data)) {
+        setAssignments(response.data);
+      }
+    } catch (err) {
+      console.error('Fetch assignments error:', err);
+    } finally {
+      setAssignmentsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (id) {
       fetchCourseDetails();
+      fetchResources();
+      fetchAssignments();
     }
   }, [id]);
+
+  const handleCreateResource = async (e) => {
+    e.preventDefault();
+    if (uploading) return;
+
+    setResourceError(null);
+    setResourceSuccess(null);
+
+    if (!resourceTitle.trim()) {
+      setResourceError('Please enter a title for the learning resource.');
+      return;
+    }
+
+    if (uploadMode === 'file' && !selectedFile) {
+      setResourceError('Please select a file to upload (max 10 MB).');
+      return;
+    }
+
+    if (uploadMode === 'link' && !resourceLink.trim()) {
+      setResourceError('Please enter a valid URL link (e.g., https://...).');
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      let response;
+      if (uploadMode === 'file') {
+        const formData = new FormData();
+        formData.append('title', resourceTitle.trim());
+        formData.append('type', resourceType);
+        formData.append('file', selectedFile);
+        response = await api.post(`/courses/${id}/resources`, formData);
+      } else {
+        response = await api.post(`/courses/${id}/resources`, {
+          title: resourceTitle.trim(),
+          type: resourceType || 'link',
+          url: resourceLink.trim(),
+        });
+      }
+
+      if (response.success && response.data) {
+        setResourceSuccess('Learning resource added successfully!');
+        setResources((prev) => [...prev, response.data]);
+        setResourceTitle('');
+        setSelectedFile(null);
+        setResourceLink('');
+      } else {
+        throw new Error(response.message || 'Failed to add resource.');
+      }
+    } catch (err) {
+      console.error('Resource upload error:', err);
+      setResourceError(err.data?.message || err.message || 'Unable to upload resource.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDownload = async (resource) => {
+    if (resource.url?.startsWith('http://') || resource.url?.startsWith('https://')) {
+      window.open(resource.url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    try {
+      await api.download(
+        `/courses/${id}/resources/${resource._id}/download`,
+        `${resource.title || 'course-resource'}`
+      );
+    } catch (err) {
+      console.error('Download error:', err);
+      setResourceError(err.data?.message || err.message || 'Failed to download resource.');
+    }
+  };
+
+  const handleCreateAssignment = async (e) => {
+    e.preventDefault();
+    if (creatingAssignment) return;
+
+    setAssignmentError(null);
+    setAssignmentSuccess(null);
+
+    const trimmedTitle = assignmentTitle.trim();
+    if (!trimmedTitle || trimmedTitle.length < 3) {
+      setAssignmentError('Assignment title must be at least 3 characters long.');
+      return;
+    }
+    if (trimmedTitle.length > 200) {
+      setAssignmentError('Assignment title cannot exceed 200 characters.');
+      return;
+    }
+
+    const trimmedDesc = assignmentDescription.trim();
+    if (!trimmedDesc) {
+      setAssignmentError('Assignment instructions/description are required.');
+      return;
+    }
+
+    if (!assignmentDeadline) {
+      setAssignmentError('Assignment submission deadline is required.');
+      return;
+    }
+
+    const deadlineDate = new Date(assignmentDeadline);
+    if (isNaN(deadlineDate.getTime())) {
+      setAssignmentError('Deadline must be a valid date and time.');
+      return;
+    }
+    if (deadlineDate.getTime() <= Date.now()) {
+      setAssignmentError('Assignment deadline must be a future date and time.');
+      return;
+    }
+
+    const score = Number(assignmentMaxScore);
+    if (!Number.isFinite(score) || score < 1 || score > 100) {
+      setAssignmentError('Maximum score must be a number between 1 and 100.');
+      return;
+    }
+
+    setCreatingAssignment(true);
+    try {
+      const payload = {
+        title: trimmedTitle,
+        description: trimmedDesc,
+        deadline: deadlineDate.toISOString(),
+        maxScore: score,
+        allowLate: Boolean(assignmentAllowLate),
+      };
+
+      const response = await api.post(`/courses/${id}/assignments`, payload);
+      if (response.success) {
+        setAssignmentSuccess('Assignment created successfully and enrolled students have been notified.');
+        setAssignmentTitle('');
+        setAssignmentDescription('');
+        setAssignmentDeadline('');
+        setAssignmentMaxScore(100);
+        setAssignmentAllowLate(false);
+        fetchAssignments();
+      } else {
+        throw new Error(response.message || 'Failed to create assignment.');
+      }
+    } catch (err) {
+      console.error('Create assignment error:', err);
+      setAssignmentError(err.data?.message || err.message || 'Unable to create assignment.');
+    } finally {
+      setCreatingAssignment(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -274,44 +499,438 @@ export default function InstructorCourseDetailsPage() {
           </div>
         </DashboardCard>
 
-        {/* Teaching Context & Upcoming Module Activations */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Phase 5 Notice Card */}
-          <div className="p-6 rounded-2xl border border-[#1C2948] bg-[#1C2948]/40 dark:bg-[#1C2948]/40 light:bg-white light:border-gray-200 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2.5">
-                <FileText className="w-5 h-5 text-[#00C8FF]" />
-                <h4 className="font-bold text-sm text-white dark:text-white light:text-gray-900">
-                  Course Learning Resources
-                </h4>
+        {/* Course Learning Resources (FR-04, Phase 5) */}
+        <DashboardCard
+          title="Course Learning Resources"
+          subtitle="Upload and manage lecture slides, documents, reading materials, and external links for enrolled students (FR-04)."
+          icon={FileText}
+          badge={
+            <Badge variant="cyan" size="sm">
+              {resources.length} {resources.length === 1 ? 'Resource' : 'Resources'}
+            </Badge>
+          }
+        >
+          <div className="p-6 space-y-6">
+            {/* Feedback Alerts */}
+            {resourceError && (
+              <div className="flex items-start space-x-3 p-4 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-300 text-xs animate-fadeIn">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-400" />
+                <div className="flex-1 font-medium">{resourceError}</div>
+                <button 
+                  onClick={() => setResourceError(null)}
+                  className="font-semibold text-rose-400 hover:underline"
+                >
+                  Dismiss
+                </button>
               </div>
-              <Badge variant="cyan" size="sm">
-                Activates in Phase 5
-              </Badge>
-            </div>
-            <p className="text-xs text-gray-400 leading-relaxed">
-              Assigned instructors will upload documents, slide decks, and external learning resources for enrolled students in Phase 5 per SRS FR-04.
-            </p>
-          </div>
+            )}
 
-          {/* Phase 6 Notice Card */}
-          <div className="p-6 rounded-2xl border border-[#1C2948] bg-[#1C2948]/40 dark:bg-[#1C2948]/40 light:bg-white light:border-gray-200 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2.5">
-                <GraduationCap className="w-5 h-5 text-purple-400" />
-                <h4 className="font-bold text-sm text-white dark:text-white light:text-gray-900">
-                  Assignment Management
-                </h4>
+            {resourceSuccess && (
+              <div className="flex items-start space-x-3 p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-xs animate-fadeIn">
+                <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5 text-emerald-400" />
+                <div className="flex-1 font-medium">{resourceSuccess}</div>
+                <button 
+                  onClick={() => setResourceSuccess(null)}
+                  className="font-semibold text-emerald-400 hover:underline"
+                >
+                  Dismiss
+                </button>
               </div>
-              <Badge variant="purple" size="sm">
-                Activates in Phase 6
-              </Badge>
-            </div>
-            <p className="text-xs text-gray-400 leading-relaxed">
-              Assignment creation with deadlines, maximum scores, instructions, and late-submission controls will be enabled in Phase 6 per SRS FR-06.
-            </p>
+            )}
+
+            {/* Resource Upload Form */}
+            <form onSubmit={handleCreateResource} className="p-5 rounded-xl border border-[#1C2948] bg-[#101735]/40 space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-[#1C2948]">
+                <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center space-x-2">
+                  <PlusCircle className="w-4 h-4 text-[#00C8FF]" />
+                  <span>Add New Learning Material</span>
+                </h4>
+
+                <div className="flex rounded-lg p-0.5 bg-[#1C2948]/60 border border-[#1C2948] text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setUploadMode('file')}
+                    className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+                      uploadMode === 'file'
+                        ? 'bg-[#00C8FF] text-[#101735] font-bold'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    File Upload
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUploadMode('link')}
+                    className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+                      uploadMode === 'link'
+                        ? 'bg-[#00C8FF] text-[#101735] font-bold'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    External Link
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                <div className="md:col-span-8 space-y-1">
+                  <label className="text-[11px] font-semibold text-gray-300">
+                    Resource Title <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={resourceTitle}
+                    onChange={(e) => setResourceTitle(e.target.value)}
+                    placeholder="e.g. Week 3: RESTful Microservices & Architecture Slides"
+                    maxLength={150}
+                    className="w-full px-3 py-2 rounded-xl border border-[#1C2948] focus:border-[#00C8FF] text-xs outline-none bg-[#101735] text-white"
+                  />
+                </div>
+
+                <div className="md:col-span-4 space-y-1">
+                  <label className="text-[11px] font-semibold text-gray-300">
+                    Category Type
+                  </label>
+                  <select
+                    value={resourceType}
+                    onChange={(e) => setResourceType(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-[#1C2948] focus:border-[#00C8FF] text-xs outline-none bg-[#101735] text-white"
+                  >
+                    <option value="slides">Slides (PowerPoint / PDF)</option>
+                    <option value="document">Document (Word / Text / Notes)</option>
+                    <option value="pdf">PDF Handbook / Article</option>
+                    <option value="link">External Web Link</option>
+                    <option value="video">Video Lecture Reference</option>
+                    <option value="other">Other (ZIP Archive / Code)</option>
+                  </select>
+                </div>
+              </div>
+
+              {uploadMode === 'file' ? (
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold text-gray-300 flex items-center justify-between">
+                    <span>Select File (Max 10 MB)</span>
+                    <span className="text-gray-400 font-mono text-[10px]">PDF, Word, PPT, ZIP, TXT</span>
+                  </label>
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="file"
+                      id="resourceFileInput"
+                      onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                      className="hidden"
+                      accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,.txt"
+                    />
+                    <label
+                      htmlFor="resourceFileInput"
+                      className="cursor-pointer inline-flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#1C2948] hover:bg-[#1C2948]/80 text-white border border-[#00C8FF]/30 transition-all"
+                    >
+                      <Upload className="w-3.5 h-3.5 text-[#00C8FF]" />
+                      <span>{selectedFile ? 'Change File' : 'Browse File...'}</span>
+                    </label>
+                    <span className="text-xs text-gray-400 truncate max-w-md">
+                      {selectedFile ? `${selectedFile.name} (${(selectedFile.size / 1024 / 1024).toFixed(2)} MB)` : 'No file chosen yet'}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <label className="text-[11px] font-semibold text-gray-300">
+                    Resource URL <span className="text-rose-400">*</span>
+                  </label>
+                  <div className="relative">
+                    <Link2 className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
+                    <input
+                      type="url"
+                      value={resourceLink}
+                      onChange={(e) => setResourceLink(e.target.value)}
+                      placeholder="https://example.com/lecture-notes"
+                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-[#1C2948] focus:border-[#00C8FF] text-xs outline-none bg-[#101735] text-white"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end pt-2">
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="sm"
+                  icon={Upload}
+                  isLoading={uploading}
+                >
+                  Upload Learning Resource
+                </Button>
+              </div>
+            </form>
+
+            {/* Existing Resources List */}
+            {resourcesLoading ? (
+              <LoadingState text="Loading course resources..." />
+            ) : resources.length === 0 ? (
+              <EmptyState
+                title="No Learning Resources Uploaded"
+                message="You have not uploaded any documents, slides, or links to this course yet. Use the form above to add materials for your students."
+              />
+            ) : (
+              <div className="overflow-x-auto rounded-xl border border-[#1C2948] dark:border-[#1C2948] light:border-gray-200">
+                <table className="w-full text-left text-xs">
+                  <thead className="border-b border-[#1C2948] bg-[#101735]/80 text-gray-400 uppercase font-bold tracking-wider">
+                    <tr>
+                      <th className="py-3 px-4">Type</th>
+                      <th className="py-3 px-4">Title</th>
+                      <th className="py-3 px-4">Date Uploaded</th>
+                      <th className="py-3 px-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#1C2948] text-gray-300">
+                    {resources.map((resItem) => {
+                      const isExternal = resItem.url?.startsWith('http://') || resItem.url?.startsWith('https://');
+
+                      return (
+                        <tr key={resItem._id} className="hover:bg-[#1C2948]/40 transition-colors">
+                          <td className="py-3 px-4">
+                            <span className="px-2 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wider bg-[#00C8FF]/15 text-[#00C8FF] border border-[#00C8FF]/30">
+                              {resItem.type}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 font-semibold text-white">
+                            <div className="flex items-center space-x-2">
+                              <FileText className="w-4 h-4 text-[#8CEBFF]" />
+                              <span>{resItem.title}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-gray-400">
+                            {formatDate(resItem.addedAt)}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            {isExternal ? (
+                              <a
+                                href={resItem.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#1C2948] hover:bg-[#1C2948]/80 text-[#00C8FF] border border-[#00C8FF]/30 transition-all"
+                              >
+                                <span>Open Link</span>
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                            ) : (
+                              <button
+                                onClick={() => handleDownload(resItem)}
+                                className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#00C8FF]/15 text-[#00C8FF] border border-[#00C8FF]/30 hover:bg-[#00C8FF]/25 transition-all"
+                              >
+                                <Download className="w-3.5 h-3.5" />
+                                <span>Download</span>
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
-        </div>
+        </DashboardCard>
+
+        {/* Course Assignments Management (FR-06) */}
+        <DashboardCard
+          title="Course Assignments"
+          subtitle="Create and manage coursework assignments, deadlines, instructions, and scoring"
+          icon={GraduationCap}
+        >
+          <div className="space-y-6">
+            {assignmentError && (
+              <div className="flex items-start space-x-3 p-4 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-300 text-xs animate-fadeIn">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-400" />
+                <div className="flex-1 font-medium">{assignmentError}</div>
+                <button 
+                  onClick={() => setAssignmentError(null)}
+                  className="font-semibold text-rose-400 hover:underline"
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
+
+            {assignmentSuccess && (
+              <div className="flex items-start space-x-3 p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-xs animate-fadeIn">
+                <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5 text-emerald-400" />
+                <div className="flex-1 font-medium">{assignmentSuccess}</div>
+                <button 
+                  onClick={() => setAssignmentSuccess(null)}
+                  className="font-semibold text-emerald-400 hover:underline"
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
+
+            {/* Assignment Creation Form */}
+            <form onSubmit={handleCreateAssignment} className="p-5 rounded-xl border border-[#1C2948] bg-[#101735]/40 space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-[#1C2948]">
+                <h4 className="text-xs font-bold text-white uppercase tracking-wider flex items-center space-x-2">
+                  <PlusCircle className="w-4 h-4 text-[#00C8FF]" />
+                  <span>Create New Assignment</span>
+                </h4>
+                <span className="text-[11px] text-gray-400">
+                  SRS FR-06 Authoring
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                <div className="md:col-span-8 space-y-1">
+                  <label className="text-[11px] font-semibold text-gray-300">
+                    Assignment Title <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={assignmentTitle}
+                    onChange={(e) => setAssignmentTitle(e.target.value)}
+                    placeholder="e.g. Lab 1: REST API Architecture & Express Services"
+                    maxLength={200}
+                    className="w-full px-3 py-2 rounded-xl border border-[#1C2948] focus:border-[#00C8FF] text-xs outline-none bg-[#101735] text-white"
+                  />
+                </div>
+
+                <div className="md:col-span-4 space-y-1">
+                  <label className="text-[11px] font-semibold text-gray-300">
+                    Maximum Score (1 - 100) <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={assignmentMaxScore}
+                    onChange={(e) => setAssignmentMaxScore(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-[#1C2948] focus:border-[#00C8FF] text-xs outline-none bg-[#101735] text-white"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[11px] font-semibold text-gray-300">
+                  Instructions & Description <span className="text-rose-400">*</span>
+                </label>
+                <textarea
+                  rows={3}
+                  value={assignmentDescription}
+                  onChange={(e) => setAssignmentDescription(e.target.value)}
+                  placeholder="Detailed instructions, deliverables, requirements, and evaluation criteria for students..."
+                  className="w-full px-3 py-2 rounded-xl border border-[#1C2948] focus:border-[#00C8FF] text-xs outline-none bg-[#101735] text-white resize-y"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                <div className="md:col-span-6 space-y-1">
+                  <label className="text-[11px] font-semibold text-gray-300">
+                    Submission Deadline <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={assignmentDeadline}
+                    onChange={(e) => setAssignmentDeadline(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-[#1C2948] focus:border-[#00C8FF] text-xs outline-none bg-[#101735] text-white"
+                  />
+                </div>
+
+                <div className="md:col-span-6 flex items-center pt-4 sm:pt-5 space-x-2.5">
+                  <input
+                    type="checkbox"
+                    id="allowLateToggle"
+                    checked={assignmentAllowLate}
+                    onChange={(e) => setAssignmentAllowLate(e.target.checked)}
+                    className="w-4 h-4 rounded border-gray-600 text-[#00C8FF] focus:ring-0 focus:ring-offset-0 bg-[#101735] cursor-pointer"
+                  />
+                  <label htmlFor="allowLateToggle" className="text-xs font-semibold text-gray-300 cursor-pointer select-none">
+                    Allow late submissions past deadline
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="sm"
+                  icon={PlusCircle}
+                  isLoading={creatingAssignment}
+                >
+                  Create Assignment
+                </Button>
+              </div>
+            </form>
+
+            {/* Published Assignments List */}
+            {assignmentsLoading ? (
+              <LoadingState text="Loading course assignments..." />
+            ) : assignments.length === 0 ? (
+              <EmptyState
+                title="No Course Assignments Created"
+                message="No assignments have been published for this course yet. Use the form above to add an assignment for your students."
+              />
+            ) : (
+              <div className="overflow-x-auto rounded-xl border border-[#1C2948] dark:border-[#1C2948] light:border-gray-200">
+                <table className="w-full text-left text-xs">
+                  <thead className="border-b border-[#1C2948] bg-[#101735]/80 text-gray-400 uppercase font-bold tracking-wider">
+                    <tr>
+                      <th className="py-3 px-4">Title & Instructions</th>
+                      <th className="py-3 px-4">Deadline</th>
+                      <th className="py-3 px-4">Max Score</th>
+                      <th className="py-3 px-4">Late Policy</th>
+                      <th className="py-3 px-4">Date Created</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#1C2948] text-gray-300">
+                    {assignments.map((item) => {
+                      const isPastDeadline = new Date(item.deadline) < new Date();
+                      return (
+                        <tr key={item.id} className="hover:bg-[#1C2948]/40 transition-colors">
+                          <td className="py-3 px-4 max-w-xs sm:max-w-md">
+                            <div className="font-semibold text-white flex items-center space-x-2">
+                              <GraduationCap className="w-4 h-4 text-purple-400 flex-shrink-0" />
+                              <span className="truncate">{item.title}</span>
+                            </div>
+                            {item.description && (
+                              <p className="text-[11px] text-gray-400 line-clamp-2 mt-0.5 pl-6">
+                                {item.description}
+                              </p>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 whitespace-nowrap">
+                            <div className="flex items-center space-x-1.5">
+                              <Clock className={`w-3.5 h-3.5 ${isPastDeadline ? 'text-rose-400' : 'text-amber-400'}`} />
+                              <span className={isPastDeadline ? 'text-rose-400 font-semibold' : 'text-gray-300'}>
+                                {formatDateTime(item.deadline)}
+                              </span>
+                            </div>
+                            {isPastDeadline && (
+                              <span className="text-[10px] text-rose-400 font-mono block pl-5">Past Due</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 whitespace-nowrap">
+                            <span className="font-bold text-white">{item.maxScore}</span>
+                            <span className="text-gray-400 text-[10px] ml-1">pts</span>
+                          </td>
+                          <td className="py-3 px-4 whitespace-nowrap">
+                            {item.allowLate ? (
+                              <Badge variant="emerald" size="sm">Allowed</Badge>
+                            ) : (
+                              <Badge variant="gray" size="sm">Disallowed</Badge>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 whitespace-nowrap text-gray-400">
+                            {formatDate(item.createdAt)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </DashboardCard>
       </div>
     </AppLayout>
   );

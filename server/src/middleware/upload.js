@@ -3,7 +3,13 @@ import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
-import { ALLOWED_CV_EXTENSIONS, ALLOWED_CV_MIME_TYPES } from '../utils/validation.js';
+import { 
+  ALLOWED_CV_EXTENSIONS, 
+  ALLOWED_CV_MIME_TYPES,
+  ALLOWED_RESOURCE_EXTENSIONS,
+  ALLOWED_RESOURCE_MIME_TYPES,
+  ALLOWED_RESOURCE_MIME_BY_EXT
+} from '../utils/validation.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,6 +19,9 @@ export const tmpDir = path.resolve(__dirname, '../../tmp');
 
 // Private permanent directory for stored CV files (never served statically, mode 0700)
 export const cvDir = path.resolve(__dirname, '../../uploads/cv');
+
+// Private permanent directory for stored course resources (mode 0700)
+export const resourcesDir = path.resolve(__dirname, '../../uploads/resources');
 
 /**
  * Ensures restrictive 0700 permissions on directory (both existing and newly created).
@@ -31,6 +40,7 @@ let directorySecurityError = null;
 try {
   ensureSecureDirectory(tmpDir);
   ensureSecureDirectory(cvDir);
+  ensureSecureDirectory(resourcesDir);
 } catch (err) {
   directorySecurityError = err;
   console.error(`[Upload Security Fatal] Failed to secure upload directories: ${err.message}`);
@@ -47,6 +57,7 @@ export function checkUploadSecurity() {
   // Re-verify at runtime to ensure permissions remain intact
   ensureSecureDirectory(tmpDir);
   ensureSecureDirectory(cvDir);
+  ensureSecureDirectory(resourcesDir);
 }
 
 const storage = multer.diskStorage({
@@ -151,6 +162,118 @@ export const handleCvUpload = (req, res, next) => {
       return res.status(400).json({
         success: false,
         message: "No file uploaded. Please attach a file under the 'cv' field.",
+      });
+    }
+
+    next();
+  });
+};
+
+const resourceStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    try {
+      checkUploadSecurity();
+      cb(null, tmpDir);
+    } catch (err) {
+      cb(err, null);
+    }
+  },
+  filename: (_req, file, cb) => {
+    const randomId = crypto.randomUUID();
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `tmp-res-${randomId}${ext}`);
+  },
+});
+
+function resourceFileFilter(_req, file, cb) {
+  const ext = path.extname(file.originalname).toLowerCase();
+
+  if (!ALLOWED_RESOURCE_EXTENSIONS.includes(ext)) {
+    const error = new Error(`Unsupported file extension '${ext}'. Permitted: ${ALLOWED_RESOURCE_EXTENSIONS.join(', ')}.`);
+    error.statusCode = 415;
+    return cb(error, false);
+  }
+
+  const validMimes = ALLOWED_RESOURCE_MIME_BY_EXT[ext];
+  if (!validMimes || !validMimes.includes(file.mimetype)) {
+    const error = new Error(`MIME type '${file.mimetype}' is not permitted for file extension '${ext}'.`);
+    error.statusCode = 415;
+    return cb(error, false);
+  }
+
+  cb(null, true);
+}
+
+const resourceUpload = multer({
+  storage: resourceStorage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10 MB (10,485,760 bytes) per FR-04 and file-upload-contracts.md
+    files: 1,
+  },
+  fileFilter: resourceFileFilter,
+}).fields([
+  { name: 'file', maxCount: 1 },
+  { name: 'resource', maxCount: 1 },
+]);
+
+/**
+ * Middleware handling optional or required resource multipart upload.
+ * If request is application/json or non-multipart, gracefully proceeds to next().
+ */
+export const handleResourceUpload = (req, res, next) => {
+  // If not multipart form-data, pass through to JSON body handler in controller
+  if (!req.is('multipart/form-data')) {
+    return next();
+  }
+
+  try {
+    checkUploadSecurity();
+  } catch (secErr) {
+    return res.status(500).json({
+      success: false,
+      message: 'Upload service unavailable: Secure storage permissions could not be established.',
+    });
+  }
+
+  resourceUpload(req, res, (err) => {
+    // If multer created temporary file and encountered an error, clean it up
+    const uploadedFile = req.files?.file?.[0] || req.files?.resource?.[0];
+    if (uploadedFile) {
+      req.file = uploadedFile;
+    }
+
+    if (err) {
+      if (req.file?.path && fs.existsSync(req.file.path)) {
+        try {
+          fs.unlinkSync(req.file.path);
+        } catch (cleanupErr) {
+          console.warn(
+            `[Resource Cleanup Warning] Failed to delete temporary file ${req.file.path}: ${cleanupErr.message}`
+          );
+        }
+      }
+
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({
+          success: false,
+          message: 'File size exceeds maximum permitted limit of 10 MB.',
+        });
+      }
+      if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+        return res.status(400).json({
+          success: false,
+          message: "Unexpected upload field. Form field name must be 'file' or 'resource'.",
+        });
+      }
+      if (err.statusCode === 415) {
+        return res.status(415).json({
+          success: false,
+          message: err.message,
+        });
+      }
+      return res.status(400).json({
+        success: false,
+        message: err.message || 'File upload failed.',
       });
     }
 

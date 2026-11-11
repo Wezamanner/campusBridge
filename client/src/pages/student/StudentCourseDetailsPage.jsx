@@ -10,7 +10,10 @@ import {
   Lock, 
   FileText, 
   PlusCircle,
-  Info
+  Info,
+  Download,
+  ExternalLink,
+  FileDown
 } from 'lucide-react';
 import { api } from '../../services/api.js';
 import AppLayout from '../../layouts/AppLayout.jsx';
@@ -19,6 +22,20 @@ import DashboardCard from '../../components/ui/DashboardCard.jsx';
 import Button from '../../components/ui/Button.jsx';
 import Badge from '../../components/ui/Badge.jsx';
 import LoadingState from '../../components/ui/LoadingState.jsx';
+
+function formatDate(dateStr) {
+  if (!dateStr) return 'N/A';
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  } catch {
+    return dateStr;
+  }
+}
 
 export default function StudentCourseDetailsPage() {
   const { id } = useParams();
@@ -30,6 +47,27 @@ export default function StudentCourseDetailsPage() {
   const [successMessage, setSuccessMessage] = useState(null);
   const [isEnrolling, setIsEnrolling] = useState(false);
 
+  // Course Resources States (Phase 5)
+  const [resources, setResources] = useState([]);
+  const [resourcesLoading, setResourcesLoading] = useState(false);
+  const [downloadingId, setDownloadingId] = useState(null);
+  const [downloadError, setDownloadError] = useState(null);
+
+  const fetchResources = async () => {
+    setResourcesLoading(true);
+    setDownloadError(null);
+    try {
+      const response = await api.get(`/courses/${id}/resources`);
+      if (response.success && Array.isArray(response.data)) {
+        setResources(response.data);
+      }
+    } catch (err) {
+      console.error('Fetch student course resources error:', err);
+    } finally {
+      setResourcesLoading(false);
+    }
+  };
+
   const fetchCourseDetails = async () => {
     setLoading(true);
     setError(null);
@@ -37,6 +75,9 @@ export default function StudentCourseDetailsPage() {
       const response = await api.get(`/courses/${id}`);
       if (response.success && response.data) {
         setCourse(response.data);
+        if (response.data.isEnrolled) {
+          fetchResources();
+        }
       } else {
         throw new Error(response.message || 'Failed to retrieve course details.');
       }
@@ -65,6 +106,7 @@ export default function StudentCourseDetailsPage() {
       if (response.success) {
         setSuccessMessage(`Successfully enrolled in course ${course.code}!`);
         setCourse((prev) => ({ ...prev, isEnrolled: true }));
+        fetchResources();
       } else {
         throw new Error(response.message || 'Enrollment failed.');
       }
@@ -73,6 +115,27 @@ export default function StudentCourseDetailsPage() {
       setError(err.data?.message || err.message || 'Failed to complete enrollment.');
     } finally {
       setIsEnrolling(false);
+    }
+  };
+
+  const handleDownloadResource = async (resource) => {
+    if (resource.url?.startsWith('http://') || resource.url?.startsWith('https://')) {
+      window.open(resource.url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    setDownloadingId(resource._id);
+    setDownloadError(null);
+    try {
+      await api.download(
+        `/courses/${id}/resources/${resource._id}/download`,
+        resource.title || 'course-resource'
+      );
+    } catch (err) {
+      console.error('Resource download error:', err);
+      setDownloadError(err.data?.message || err.message || 'Failed to download resource.');
+    } finally {
+      setDownloadingId(null);
     }
   };
 
@@ -254,35 +317,95 @@ export default function StudentCourseDetailsPage() {
               </div>
             </DashboardCard>
 
-            {/* Course Resources & Assignments Notice Card (FR-05) */}
+            {/* Course Resources Card (FR-05, Phase 5) */}
             <DashboardCard
-              title="Learning Resources & Assignments"
-              subtitle="Course materials and coursework submissions (FR-05)"
+              title="Course Learning Resources"
+              subtitle="Lecture notes, slide decks, and reading resources uploaded by your assigned instructor (FR-05)"
               icon={FileText}
+              badge={
+                course.isEnrolled ? (
+                  <Badge variant="cyan" size="sm">
+                    {resources.length} {resources.length === 1 ? 'Resource' : 'Resources'}
+                  </Badge>
+                ) : null
+              }
             >
               <div className="p-6 space-y-4">
-                {course.isEnrolled ? (
-                  <div className="space-y-4">
-                    <div className="p-4 rounded-xl border border-[#1C2948] bg-[#101735]/40 text-xs text-gray-300 space-y-1">
-                      <div className="flex items-center space-x-2 font-bold text-white">
-                        <FileText className="w-4 h-4 text-[#00C8FF]" />
-                        <span>Course Resources (Phase 5)</span>
-                      </div>
-                      <p className="text-gray-400 leading-relaxed">
-                        Lecture notes, slide decks, and reading resources uploaded by your instructor will appear here once Phase 5 is active.
-                      </p>
-                    </div>
-
-                    <div className="p-4 rounded-xl border border-[#1C2948] bg-[#101735]/40 text-xs text-gray-300 space-y-1">
-                      <div className="flex items-center space-x-2 font-bold text-white">
-                        <GraduationCap className="w-4 h-4 text-purple-400" />
-                        <span>Coursework & Assignments (Phase 6 & 7)</span>
-                      </div>
-                      <p className="text-gray-400 leading-relaxed">
-                        Assignments, submission instructions, and deadlines will be available here once Phase 6 is active.
-                      </p>
-                    </div>
+                {downloadError && (
+                  <div className="flex items-start space-x-3 p-3 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-300 text-xs animate-fadeIn">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-400" />
+                    <div className="flex-1 font-medium">{downloadError}</div>
+                    <button 
+                      onClick={() => setDownloadError(null)}
+                      className="font-semibold text-rose-400 hover:underline"
+                    >
+                      Dismiss
+                    </button>
                   </div>
+                )}
+
+                {course.isEnrolled ? (
+                  resourcesLoading ? (
+                    <LoadingState text="Loading course resources..." />
+                  ) : resources.length === 0 ? (
+                    <div className="p-6 text-center rounded-xl border border-dashed border-[#1C2948] bg-[#101735]/20 space-y-2">
+                      <FileText className="w-8 h-8 text-gray-500 mx-auto" />
+                      <p className="text-xs text-gray-400">
+                        No learning resources have been uploaded yet by the instructor.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {resources.map((resItem) => {
+                        const isExternal = resItem.url?.startsWith('http://') || resItem.url?.startsWith('https://');
+                        const isDownloading = downloadingId === resItem._id;
+
+                        return (
+                          <div
+                            key={resItem._id}
+                            className="p-4 rounded-xl border border-[#1C2948] bg-[#101735]/60 hover:border-[#00C8FF]/40 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                          >
+                            <div className="space-y-1">
+                              <div className="flex items-center space-x-2">
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[#00C8FF]/15 text-[#00C8FF] border border-[#00C8FF]/30">
+                                  {resItem.type}
+                                </span>
+                                <h4 className="text-xs font-bold text-white">
+                                  {resItem.title}
+                                </h4>
+                              </div>
+                              <p className="text-[11px] text-gray-400">
+                                Added {formatDate(resItem.addedAt)}
+                              </p>
+                            </div>
+
+                            <div className="flex-shrink-0">
+                              {isExternal ? (
+                                <a
+                                  href={resItem.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#1C2948] hover:bg-[#1C2948]/80 text-[#00C8FF] border border-[#00C8FF]/30 transition-all"
+                                >
+                                  <span>Open Link</span>
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                </a>
+                              ) : (
+                                <button
+                                  onClick={() => handleDownloadResource(resItem)}
+                                  disabled={isDownloading}
+                                  className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#00C8FF]/15 text-[#00C8FF] border border-[#00C8FF]/30 hover:bg-[#00C8FF]/25 transition-all disabled:opacity-50"
+                                >
+                                  <Download className="w-3.5 h-3.5" />
+                                  <span>{isDownloading ? 'Downloading...' : 'Download'}</span>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )
                 ) : (
                   <div className="p-6 text-center rounded-xl border border-dashed border-[#1C2948] bg-[#101735]/20 space-y-3">
                     <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center mx-auto">
@@ -303,6 +426,19 @@ export default function StudentCourseDetailsPage() {
                     >
                       Enroll to Unlock Materials
                     </Button>
+                  </div>
+                )}
+
+                {/* Phase 6 Notice inside Enrolled View */}
+                {course.isEnrolled && (
+                  <div className="p-4 rounded-xl border border-[#1C2948] bg-[#101735]/40 text-xs text-gray-300 space-y-1 mt-4">
+                    <div className="flex items-center space-x-2 font-bold text-white">
+                      <GraduationCap className="w-4 h-4 text-purple-400" />
+                      <span>Coursework & Assignments (Phase 6 & 7)</span>
+                    </div>
+                    <p className="text-gray-400 leading-relaxed">
+                      Assignments, submission instructions, and deadlines will be available here once Phase 6 is active.
+                    </p>
                   </div>
                 )}
               </div>
