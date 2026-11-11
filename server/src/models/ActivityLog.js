@@ -54,9 +54,15 @@ const activityLogSchema = new mongoose.Schema(
       validate: {
         validator: function (val) {
           if (!val || typeof val !== 'object') return true;
-          // Security rule SEC-12 / Section 13.2: Never store passwords, tokens, or raw message bodies
+          // Security rule SEC-12 / Section 13.2: Never store passwords, tokens, or raw credentials
           const serialized = JSON.stringify(val).toLowerCase();
-          return !serialized.includes('password') && !serialized.includes('token') && !serialized.includes('secret');
+          return (
+            !serialized.includes('password') &&
+            !serialized.includes('token') &&
+            !serialized.includes('secret') &&
+            !serialized.includes('bearer ') &&
+            !serialized.includes('authorization')
+          );
         },
         message: 'Activity log metadata must not contain credentials, tokens, or sensitive data',
       },
