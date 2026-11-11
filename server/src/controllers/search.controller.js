@@ -23,6 +23,7 @@ import { Internship } from '../models/Internship.js';
 import { Enrollment } from '../models/Enrollment.js';
 import { Project } from '../models/Project.js';
 import { Task } from '../models/Task.js';
+import { Message } from '../models/Message.js';
 import { escapeRegex } from '../utils/validation.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -42,7 +43,7 @@ export const globalSearch = async (req, res, next) => {
 
     const safeQ = escapeRegex(q);
     const regex = new RegExp(safeQ, 'i');
-    const results = { courses: [], internships: [], projects: [], tasks: [] };
+    const results = { courses: [], internships: [], projects: [], tasks: [], messages: [] };
 
     // ── Courses ──────────────────────────────────────────────────────────────
     const courseFilter = {
@@ -117,11 +118,33 @@ export const globalSearch = async (req, res, next) => {
       results.tasks = tasks.map((t) => ({ ...t, _type: 'task' }));
     }
 
+    // ── Direct Messages (Participant only, SEC-13 & ASM-06) ───────────────────
+    const messages = await Message.find({
+      $or: [{ senderId: req.user._id }, { recipientId: req.user._id }],
+      body: regex,
+    })
+      .populate('senderId', 'firstName lastName role')
+      .populate('recipientId', 'firstName lastName role')
+      .select('body senderId recipientId createdAt')
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .lean();
+
+    results.messages = messages.map((m) => ({
+      _id: m._id,
+      body: m.body,
+      sender: m.senderId,
+      recipient: m.recipientId,
+      createdAt: m.createdAt,
+      _type: 'message',
+    }));
+
     const totalResults =
       results.courses.length +
       results.internships.length +
       results.projects.length +
-      results.tasks.length;
+      results.tasks.length +
+      results.messages.length;
 
     return res.status(200).json({
       success: true,

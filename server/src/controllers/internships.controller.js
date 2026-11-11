@@ -192,6 +192,21 @@ export const applyForInternship = async (req, res, next) => {
       // Non-blocking notification dispatch
     }
 
+    // In-app notification for coordinator — FR-11 (non-blocking)
+    if (internship.createdBy) {
+      try {
+        await Notification.create({
+          userId: internship.createdBy,
+          type: 'application',
+          title: 'New Internship Application',
+          message: `A student submitted an application for "${internship.title}".`,
+          link: '/coordinator/applications',
+        });
+      } catch (notifErr) {
+        // Non-blocking notification dispatch
+      }
+    }
+
     return res.status(201).json({
       success: true,
       message: 'Application submitted successfully.',

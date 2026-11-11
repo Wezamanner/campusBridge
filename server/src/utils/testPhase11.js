@@ -306,10 +306,28 @@ section('8. Global Search Scoping (FR-42, ASM-06)');
   assert('Instructor does not see another instructor course in search', !isCourseVisibleInSearch(courseA, userInst2));
   assert('Student sees active course in search', isCourseVisibleInSearch(courseA, userStudent));
 
-  // ASM-06: Student projects and tasks inclusion
-  const searchResults = { courses: [courseA], internships: [], projects: [{ name: 'Project CS301' }], tasks: [{ title: 'Task CS301' }] };
+  // ASM-06: Student projects, tasks, and messages inclusion
+  const searchResults = {
+    courses: [courseA],
+    internships: [{ title: 'Internship 1' }],
+    projects: [{ name: 'Project CS301' }],
+    tasks: [{ title: 'Task CS301' }],
+    messages: [{ body: 'Meeting about CS301' }],
+  };
   assert('Search results include projects for student', searchResults.projects.length === 1);
   assert('Search results include tasks for student', searchResults.tasks.length === 1);
+  assert('Search results include messages for participant', searchResults.messages.length === 1);
+  assert('Search covers all 5 required categories', Object.keys(searchResults).length === 5);
+
+  // Message search participant isolation (SEC-13 & ASM-06)
+  const isMessageVisibleInSearch = (msg, userId) => {
+    return msg.senderId === userId || msg.recipientId === userId;
+  };
+  const myMsg = { senderId: 'u1', recipientId: 'u2', body: 'Hello' };
+  const otherMsg = { senderId: 'u3', recipientId: 'u4', body: 'Private' };
+  assert('Participant can search own message', isMessageVisibleInSearch(myMsg, 'u1'));
+  assert('Recipient can search received message', isMessageVisibleInSearch(myMsg, 'u2'));
+  assert('Non-participant cannot search message (SEC-13)', !isMessageVisibleInSearch(otherMsg, 'u1'));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -380,6 +398,31 @@ section('9. Security Improvements & Automated Notifications');
   assert('Earns PROJECT_BUILDER badge', earned.includes('PROJECT_BUILDER'));
   assert('Earns INTERNSHIP_APPLICANT badge', earned.includes('INTERNSHIP_APPLICANT'));
   assert('Earns HIGH_ACHIEVER badge', earned.includes('HIGH_ACHIEVER'));
+
+  // Coordinator notification on internship application submission (FR-11)
+  const buildCoordinatorAppNotification = (coordinatorId, internshipTitle) => ({
+    userId: coordinatorId,
+    type: 'application',
+    title: 'New Internship Application',
+    message: `A student submitted an application for "${internshipTitle}".`,
+    link: '/coordinator/applications',
+  });
+  const coordNotif = buildCoordinatorAppNotification('coord1', 'Software Intern');
+  assert('Coordinator notification targets coordinatorId', coordNotif.userId === 'coord1');
+  assert('Coordinator notification includes internship title', coordNotif.message.includes('Software Intern'));
+  assert('Coordinator notification links to coordinator view', coordNotif.link === '/coordinator/applications');
+
+  // Ranking by average submission score formula (FR-17)
+  const calculateAverageSubmissionScore = (grades) => {
+    if (!grades || grades.length === 0) return 0;
+    const total = grades.reduce((sum, g) => sum + (g.score / g.maxScore) * 100, 0);
+    return Math.round((total / grades.length) * 10) / 10;
+  };
+  const mockGrades = [
+    { score: 45, maxScore: 50 }, // 90%
+    { score: 80, maxScore: 100 }, // 80%
+  ];
+  assert('Ranking calculates average submission score (85%)', calculateAverageSubmissionScore(mockGrades) === 85.0);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

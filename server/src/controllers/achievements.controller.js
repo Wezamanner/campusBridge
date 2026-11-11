@@ -136,26 +136,45 @@ export const getAchievements = async (req, res, next) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /api/v1/rankings
-// Retrieve student cohort leaderboard by average score (FR-17)
+// Retrieve student cohort leaderboard by average submission score (FR-17)
 // Enforces FR-17 privacy: first name + last initial only
 // ─────────────────────────────────────────────────────────────────────────────
 export const getRankings = async (req, res, next) => {
   try {
     const currentUserId = req.user._id.toString();
 
-    // Aggregate average scores per student from Progress records
-    const progressStats = await Progress.aggregate([
+    // FR-17: Ranks students by average submission score from graded submissions
+    const gradeStats = await Grade.aggregate([
       {
         $group: {
           _id: '$studentId',
-          averageScore: { $avg: '$averageScore' },
-          totalCompleted: { $sum: '$submittedCount' },
+          averageScore: {
+            $avg: {
+              $multiply: [{ $divide: ['$score', '$maxScore'] }, 100],
+            },
+          },
+          totalGraded: { $sum: 1 },
         },
       },
-      { $sort: { averageScore: -1, totalCompleted: -1 } },
+      { $sort: { averageScore: -1, totalGraded: -1 } },
     ]);
 
-    const studentIds = progressStats.map((p) => p._id);
+    // Fall back to Progress records if Grade collection is not yet populated
+    let rankingStats = gradeStats;
+    if (gradeStats.length === 0) {
+      rankingStats = await Progress.aggregate([
+        {
+          $group: {
+            _id: '$studentId',
+            averageScore: { $avg: '$averageScore' },
+            totalGraded: { $sum: '$submittedCount' },
+          },
+        },
+        { $sort: { averageScore: -1, totalGraded: -1 } },
+      ]);
+    }
+
+    const studentIds = rankingStats.map((p) => p._id);
     const users = await User.find({ _id: { $in: studentIds }, role: 'student', active: true })
       .select('_id name firstName lastName email')
       .lean();
@@ -167,7 +186,7 @@ export const getRankings = async (req, res, next) => {
     let myAverageScore = 0;
 
     let rankCounter = 1;
-    for (const item of progressStats) {
+    for (const item of rankingStats) {
       const uId = item._id.toString();
       const user = userMap.get(uId);
       if (!user) continue;
@@ -190,10 +209,16 @@ export const getRankings = async (req, res, next) => {
 
     // If current student has no grades yet, calculate standing as unranked
     if (!myRank) {
-      const myProgress = await Progress.find({ studentId: req.user._id }).lean();
-      if (myProgress.length > 0) {
-        const avg = myProgress.reduce((sum, p) => sum + (p.averageScore || 0), 0) / myProgress.length;
-        myAverageScore = Math.round(avg * 10) / 10;
+      const myGrades = await Grade.find({ studentId: req.user._id }).lean();
+      if (myGrades.length > 0) {
+        const sum = myGrades.reduce((acc, g) => acc + (g.score / g.maxScore) * 100, 0);
+        myAverageScore = Math.round((sum / myGrades.length) * 10) / 10;
+      } else {
+        const myProgress = await Progress.find({ studentId: req.user._id }).lean();
+        if (myProgress.length > 0) {
+          const avg = myProgress.reduce((sum, p) => sum + (p.averageScore || 0), 0) / myProgress.length;
+          myAverageScore = Math.round(avg * 10) / 10;
+        }
       }
     }
 
