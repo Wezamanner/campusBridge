@@ -7,6 +7,7 @@ import { Assignment } from '../models/Assignment.js';
 import { Enrollment } from '../models/Enrollment.js';
 import { Submission } from '../models/Submission.js';
 import { Grade } from '../models/Grade.js';
+import { Notification } from '../models/Notification.js';
 import { submissionsDir } from '../middleware/upload.js';
 import {
   validateAssignmentInput,
@@ -565,6 +566,21 @@ export const submitAssignment = async (req, res) => {
         }
       }
 
+      // In-app notification for instructor — FR-14 (non-blocking)
+      if (course.instructorId) {
+        try {
+          await Notification.create({
+            userId: course.instructorId,
+            type: 'submission',
+            title: 'Assignment Submission Updated',
+            message: `A student updated their submission for "${assignment.title}".`,
+            link: `/instructor/courses/${course._id}`,
+          });
+        } catch (notifErr) {
+          console.error('[Notification Dispatch Error] Submission update notification failed:', notifErr.message);
+        }
+      }
+
       return res.status(200).json({
         success: true,
         message: 'Assignment submission updated successfully.',
@@ -596,6 +612,21 @@ export const submitAssignment = async (req, res) => {
       status: 'Submitted',
       submittedAt: new Date(),
     });
+
+    // In-app notification for instructor — FR-14 (non-blocking)
+    if (course.instructorId) {
+      try {
+        await Notification.create({
+          userId: course.instructorId,
+          type: 'submission',
+          title: 'New Assignment Submission',
+          message: `A student submitted work for "${assignment.title}".`,
+          link: `/instructor/courses/${course._id}`,
+        });
+      } catch (notifErr) {
+        console.error('[Notification Dispatch Error] Submission notification failed:', notifErr.message);
+      }
+    }
 
     return res.status(201).json({
       success: true,

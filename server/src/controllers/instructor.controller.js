@@ -4,6 +4,7 @@ import { Assignment } from '../models/Assignment.js';
 import { Submission } from '../models/Submission.js';
 import { Grade } from '../models/Grade.js';
 import { User } from '../models/User.js';
+import { Notification } from '../models/Notification.js';
 import { recalculateStudentCourseProgress } from '../services/progress.service.js';
 
 /**
@@ -317,7 +318,18 @@ export const gradeSubmission = async (req, res) => {
       // Progress will be recalculated on next grading or can be manually triggered
     }
 
-    // TODO Phase 14: Dispatch notification to student (FR-14)
+    // In-app notification for student — FR-14 (non-blocking)
+    try {
+      await Notification.create({
+        userId: submission.studentId,
+        type: 'grade',
+        title: 'Assignment Graded',
+        message: `Your submission for "${assignment.title}" has been graded: ${numScore}/${assignment.maxScore}.`,
+        link: `/student/courses/${submission.courseId}`,
+      });
+    } catch (notifErr) {
+      console.error('[Notification Dispatch Error] Grade notification failed:', notifErr.message);
+    }
 
     return res.status(200).json({
       success: true,

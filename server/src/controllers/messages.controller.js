@@ -176,12 +176,19 @@ export const sendMessage = async (req, res, next) => {
     // FR-33: Notify the recipient of incoming message (non-blocking)
     try {
       const senderName = `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || 'A user';
+      const messageLink =
+        recipient.role === 'instructor'
+          ? '/instructor/messages'
+          : recipient.role === 'coordinator'
+          ? '/coordinator/messages'
+          : '/student/messages';
+
       await Notification.create({
         userId: recipientId,
         type: 'message',
         title: `New message from ${senderName}`,
         message: body.trim().slice(0, 100),
-        link: '/student/messages',
+        link: messageLink,
       });
     } catch (notifErr) {
       // Non-blocking notification dispatch

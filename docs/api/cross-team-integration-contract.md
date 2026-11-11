@@ -61,3 +61,52 @@ erDiagram
     User ||--o{ Achievement : "earns"
     User ||--o{ ActivityLog : "generates"
 ```
+
+---
+
+## 4. Phase 12 Event & Scheduler Contracts (Notifications & Messaging)
+
+### 4.1 Application Status Changed Event Contract (FR-11, FR-14)
+When Developer 3 (Coordinator) executes application status transitions (`PATCH /api/v1/applications/:id/status`), the coordinator controller emits this event so the notification integration can notify the applicant:
+
+- **Event Identifier**: `APPLICATION_STATUS_CHANGED`
+- **Producer**: Developer 3 (Coordinator module)
+- **Consumer**: Developer 1 & 2 (`applicationNotification.service.js`)
+- **Transport**: In-process `applicationEvents` EventEmitter bus or direct import of `handleApplicationStatusChanged(payload)`.
+
+**Payload Specification**:
+```json
+{
+  "applicationId": "ObjectId / String (required)",
+  "studentId": "ObjectId / String (required)",
+  "previousStatus": "String ('Submitted' | 'Under review' | 'Forwarded' | 'Accepted' | 'Rejected')",
+  "newStatus": "String ('Under review' | 'Forwarded' | 'Accepted' | 'Rejected' | 'Withdrawn', required)",
+  "internshipId": "ObjectId / String (optional)",
+  "internshipTitle": "String (optional, e.g. 'Frontend Engineer Intern')",
+  "timestamp": "ISO Date String (optional)"
+}
+```
+
+**Consumer Action**:
+- Creates `Notification` for `studentId`:
+  - `type`: `'application'`
+  - `title`: `'Application ' + newStatus`
+  - `link`: `'/student/applications'`
+- Enforces deduplication: repeated events for the same status and application will not duplicate notifications.
+- Non-blocking: dispatch errors are logged without failing the coordinator's primary update.
+
+---
+
+### 4.2 Deadline Notification Scheduler Contract (FR-14)
+- **Service**: `processDeadlineNotifications(options)` in `server/src/services/deadlineNotification.service.js`
+- **Execution Mode**: Decoupled, parameterizable service ready to be wired into a deployment cron runner or background worker.
+- **Parameters**:
+  - `windowHours` (default: 24, configurable lead time window)
+  - `referenceDate` (default: `new Date()`)
+  - `dryRun` (default: `false`)
+- **Behavior**:
+  - Scans assignments with `deadline` between `referenceDate` and `referenceDate + windowHours`.
+  - Excludes students who have already submitted.
+  - Excludes students not enrolled in the course.
+  - Creates `Notification` with `type: 'deadline'` and link `'/student/courses/:courseId'`.
+  - Prevents duplicate notifications for the same assignment and student.
