@@ -17,6 +17,7 @@ import {
   Settings,
   HelpCircle,
   User,
+  Sparkles,
 } from 'lucide-react';
 
 export const ROLE_NAVIGATION = {
@@ -24,11 +25,13 @@ export const ROLE_NAVIGATION = {
     { name: 'Dashboard', path: '/student/dashboard', icon: LayoutDashboard },
     { name: 'Profile & CV', path: '/student/profile', icon: User },
     { name: 'Projects', path: '/student/projects', icon: FolderKanban },
-    { name: 'Learning', path: '/student/courses', icon: BookOpen },
     { name: 'Tasks', path: '/student/tasks', icon: CheckSquare },
-    { name: 'Analytics', path: '/student/analytics', icon: LineChart },
-    { name: 'Messages', path: '/student/messages', icon: MessageSquare, badge: 3 },
-    { name: 'Notifications', path: '/student/notifications', icon: Bell, badge: 2 },
+    { name: 'Learning', path: '/student/courses', icon: BookOpen },
+    { name: 'Internships', path: '/student/internships', icon: Briefcase },
+    { name: 'AI Assistant', path: '/student/ai', icon: Sparkles },
+    { name: 'Achievements', path: '/student/analytics', icon: LineChart },
+    { name: 'Messages', path: '/student/messages', icon: MessageSquare },
+    { name: 'Notifications', path: '/student/notifications', icon: Bell },
   ],
   instructor: [
     { name: 'Dashboard', path: '/instructor/dashboard', icon: LayoutDashboard },

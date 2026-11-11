@@ -10,6 +10,14 @@ import StudentProfilePage from './pages/student/StudentProfilePage.jsx';
 import StudentCoursesPage from './pages/student/StudentCoursesPage.jsx';
 import StudentCourseDetailsPage from './pages/student/StudentCourseDetailsPage.jsx';
 import StudentAssignmentDetailsPage from './pages/student/StudentAssignmentDetailsPage.jsx';
+import StudentProjectsPage from './pages/student/StudentProjectsPage.jsx';
+import StudentTasksPage from './pages/student/StudentTasksPage.jsx';
+import StudentInternshipsPage from './pages/student/StudentInternshipsPage.jsx';
+import StudentApplicationsPage from './pages/student/StudentApplicationsPage.jsx';
+import StudentAIAssistantPage from './pages/student/StudentAIAssistantPage.jsx';
+import StudentAchievementsPage from './pages/student/StudentAchievementsPage.jsx';
+import StudentMessagesPage from './pages/student/StudentMessagesPage.jsx';
+import StudentNotificationsPage from './pages/student/StudentNotificationsPage.jsx';
 import InstructorDashboard from './pages/instructor/InstructorDashboard.jsx';
 import AtRiskMonitoringPage from './pages/instructor/AtRiskMonitoringPage.jsx';
 import InstructorCoursesPage from './pages/instructor/InstructorCoursesPage.jsx';
@@ -371,6 +379,78 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={['student']}>
                 <StudentAssignmentDetailsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/projects"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <StudentProjectsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/tasks"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <StudentTasksPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/internships"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <StudentInternshipsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/applications"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <StudentApplicationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/ai"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <StudentAIAssistantPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/analytics"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <StudentAchievementsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/achievements"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <StudentAchievementsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/messages"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <StudentMessagesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/notifications"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <StudentNotificationsPage />
               </ProtectedRoute>
             }
           />
