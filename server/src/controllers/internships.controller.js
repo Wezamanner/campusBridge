@@ -17,7 +17,9 @@
 import { Internship } from '../models/Internship.js';
 import { Application } from '../models/Application.js';
 import { ActivityLog } from '../models/ActivityLog.js';
+import { Notification } from '../models/Notification.js';
 import { User } from '../models/User.js';
+import { escapeRegex, sanitizeMetadata } from '../utils/validation.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /api/v1/internships
@@ -36,13 +38,14 @@ export const listInternships = async (req, res, next) => {
     }
 
     if (req.query.skills) {
-      // Filter by skill (case-insensitive substring match)
-      const skillQuery = req.query.skills.trim();
-      filter.skills = { $elemMatch: { $regex: skillQuery, $options: 'i' } };
+      // Filter by skill safely (case-insensitive escaped regex)
+      const safeSkill = escapeRegex(req.query.skills.trim());
+      filter.skills = { $elemMatch: { $regex: safeSkill, $options: 'i' } };
     }
 
     if (req.query.q) {
-      const regex = new RegExp(req.query.q.trim(), 'i');
+      const safeTerm = escapeRegex(req.query.q.trim());
+      const regex = new RegExp(safeTerm, 'i');
       filter.$or = [{ title: regex }, { description: regex }, { location: regex }];
     }
 
@@ -173,8 +176,21 @@ export const applyForInternship = async (req, res, next) => {
       action: 'APPLY_INTERNSHIP',
       targetType: 'Application',
       targetId: application._id,
-      meta: { internshipTitle: internship.title },
+      meta: sanitizeMetadata({ internshipTitle: internship.title }),
     });
+
+    // In-app notification for student — FR-11, FR-14 (non-blocking)
+    try {
+      await Notification.create({
+        userId: req.user._id,
+        type: 'application',
+        title: 'Application Submitted',
+        message: `Your application for "${internship.title}" has been submitted successfully.`,
+        link: '/student/applications',
+      });
+    } catch (notifErr) {
+      // Non-blocking notification dispatch
+    }
 
     return res.status(201).json({
       success: true,
@@ -270,8 +286,21 @@ export const updateApplicationStatus = async (req, res, next) => {
       action: 'UPDATE_APPLICATION',
       targetType: 'Application',
       targetId: application._id,
-      meta: { newStatus: status },
+      meta: sanitizeMetadata({ newStatus: status }),
     });
+
+    // In-app notification for student — FR-11, FR-14 (non-blocking)
+    try {
+      await Notification.create({
+        userId: req.user._id,
+        type: 'application',
+        title: 'Application Withdrawn',
+        message: 'You have withdrawn your internship application.',
+        link: '/student/applications',
+      });
+    } catch (notifErr) {
+      // Non-blocking notification dispatch
+    }
 
     return res.status(200).json({
       success: true,

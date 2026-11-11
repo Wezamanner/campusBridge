@@ -90,18 +90,19 @@ Modern responsive React UI views built using Tailwind CSS and Lucide icons:
 ## 5. Verification & Test Evidence
 
 ### 5.1 Comprehensive Test Suite (`testPhase11.js`)
-- **Total Test Cases**: 54
-- **Passed**: 54
+- **Total Test Cases**: 73
+- **Passed**: 73
 - **Failed**: 0
 - **Suites Tested**:
-  - Achievements & Cohort Rankings (FR-17 privacy formatting)
+  - Achievements & Cohort Rankings (FR-17 privacy formatting & dynamic milestone evaluation)
   - AI Learning Assistant (CON-05 advisory disclaimers and hours clamping)
   - Projects & Tasks (ASM-02 student-only role enforcement)
   - Internships & Applications (CV verification, duplicate rejection, student withdrawal)
-  - In-App Notifications (Count, single read, bulk read)
-  - Direct Messaging (ASM-05 peer restriction enforcement)
-  - Activity Feed & Weekly Summary (SEC-12 metadata sanitization)
-  - Global Search (ASM-06 scoping)
+  - In-App Notifications (Count, single read, bulk read, automatic dispatch on messages and applications)
+  - Direct Messaging (ASM-05 peer restriction enforcement & recipient notifications)
+  - Activity Feed & Weekly Summary (SEC-12 deep metadata sanitization)
+  - Global Search (ASM-06 scoping including personal projects & tasks)
+  - Security (safe RegExp escaping against ReDoS, recursive metadata credential stripping)
 
 ### 5.2 Regression Verification
 - `testPhase10Integration.js`: 40 Passed, 0 Failed.

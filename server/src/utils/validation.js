@@ -679,3 +679,37 @@ export function validateSubmissionFileSignature(filePath, mimeType, originalname
 
   return { valid: true };
 }
+
+/**
+ * Safely escape regular expression special characters to prevent ReDoS / injection
+ */
+export function escapeRegex(string) {
+  if (typeof string !== 'string') return '';
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Deep recursive metadata sanitization (SEC-12)
+ * Strips sensitive fields (passwords, tokens, secrets, credentials, auth headers)
+ */
+export function sanitizeMetadata(data) {
+  if (!data || typeof data !== 'object') return data;
+  if (Array.isArray(data)) {
+    return data.map(sanitizeMetadata);
+  }
+  const sensitivePatterns = /password|token|secret|authorization|cookie|credential|hash/i;
+  const sanitized = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (sensitivePatterns.test(key)) {
+      continue; // omit sensitive key
+    }
+    if (typeof value === 'object' && value !== null) {
+      sanitized[key] = sanitizeMetadata(value);
+    } else if (typeof value === 'string' && (value.startsWith('Bearer ') || value.startsWith('ey'))) {
+      continue; // omit token-like strings
+    } else {
+      sanitized[key] = value;
+    }
+  }
+  return sanitized;
+}

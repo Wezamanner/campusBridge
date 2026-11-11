@@ -21,6 +21,9 @@
 import { Course } from '../models/Course.js';
 import { Internship } from '../models/Internship.js';
 import { Enrollment } from '../models/Enrollment.js';
+import { Project } from '../models/Project.js';
+import { Task } from '../models/Task.js';
+import { escapeRegex } from '../utils/validation.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /api/v1/search?q=
@@ -37,8 +40,9 @@ export const globalSearch = async (req, res, next) => {
       });
     }
 
-    const regex = new RegExp(q, 'i');
-    const results = { courses: [], internships: [] };
+    const safeQ = escapeRegex(q);
+    const regex = new RegExp(safeQ, 'i');
+    const results = { courses: [], internships: [], projects: [], tasks: [] };
 
     // ── Courses ──────────────────────────────────────────────────────────────
     const courseFilter = {
@@ -89,7 +93,35 @@ export const globalSearch = async (req, res, next) => {
 
     results.internships = internships.map((i) => ({ ...i, _type: 'internship' }));
 
-    const totalResults = results.courses.length + results.internships.length;
+    // ── Personal Projects & Tasks (Student only, ASM-02 & ASM-06) ────────────
+    if (req.user.role === 'student') {
+      const [projects, tasks] = await Promise.all([
+        Project.find({
+          ownerId: req.user._id,
+          archived: false,
+          $or: [{ name: regex }, { description: regex }],
+        })
+          .select('name description status dueDate')
+          .limit(5)
+          .lean(),
+        Task.find({
+          ownerId: req.user._id,
+          title: regex,
+        })
+          .select('title priority status dueDate projectId')
+          .limit(5)
+          .lean(),
+      ]);
+
+      results.projects = projects.map((p) => ({ ...p, _type: 'project' }));
+      results.tasks = tasks.map((t) => ({ ...t, _type: 'task' }));
+    }
+
+    const totalResults =
+      results.courses.length +
+      results.internships.length +
+      results.projects.length +
+      results.tasks.length;
 
     return res.status(200).json({
       success: true,

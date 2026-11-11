@@ -15,6 +15,7 @@
 
 import { Message } from '../models/Message.js';
 import { User } from '../models/User.js';
+import { Notification } from '../models/Notification.js';
 
 /** Build conversationKey from two user IDs (sorted, deterministic) */
 const makeConversationKey = (a, b) => [a.toString(), b.toString()].sort().join('_');
@@ -171,6 +172,20 @@ export const sendMessage = async (req, res, next) => {
       recipientId,
       body: body.trim(),
     });
+
+    // FR-33: Notify the recipient of incoming message (non-blocking)
+    try {
+      const senderName = `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || 'A user';
+      await Notification.create({
+        userId: recipientId,
+        type: 'message',
+        title: `New message from ${senderName}`,
+        message: body.trim().slice(0, 100),
+        link: '/student/messages',
+      });
+    } catch (notifErr) {
+      // Non-blocking notification dispatch
+    }
 
     return res.status(201).json({
       success: true,

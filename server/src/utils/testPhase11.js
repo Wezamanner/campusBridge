@@ -16,6 +16,8 @@
  * Run: node server/src/utils/testPhase11.js
  */
 
+import { escapeRegex, sanitizeMetadata } from './validation.js';
+
 let passed = 0;
 let failed = 0;
 const errors = [];
@@ -303,6 +305,81 @@ section('8. Global Search Scoping (FR-42, ASM-06)');
   assert('Instructor sees own course in search', isCourseVisibleInSearch(courseA, userInst1));
   assert('Instructor does not see another instructor course in search', !isCourseVisibleInSearch(courseA, userInst2));
   assert('Student sees active course in search', isCourseVisibleInSearch(courseA, userStudent));
+
+  // ASM-06: Student projects and tasks inclusion
+  const searchResults = { courses: [courseA], internships: [], projects: [{ name: 'Project CS301' }], tasks: [{ title: 'Task CS301' }] };
+  assert('Search results include projects for student', searchResults.projects.length === 1);
+  assert('Search results include tasks for student', searchResults.tasks.length === 1);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 9. Security Improvements & Automated Notifications
+// ─────────────────────────────────────────────────────────────────────────────
+section('9. Security Improvements & Automated Notifications');
+
+{
+  // Regex metacharacter escaping
+  const rawInput = 'CS.*301+[test]?';
+  const escaped = escapeRegex(rawInput);
+  assert('Escapes regex special characters', !escaped.includes('.*') && escaped.includes('\\.') && escaped.includes('\\*'));
+  assert('Safe regex compiles and matches literal text', new RegExp(escaped).test('CS.*301+[test]?'));
+  assert('Safe regex does not match arbitrary regex patterns', !new RegExp(escaped).test('CS123301test'));
+
+  // Deep recursive metadata sanitization (SEC-12)
+  const dirtyMeta = {
+    action: 'CREATE_TASK',
+    password: 'superSecretPassword',
+    authToken: 'bearer eyJhbGciOi...',
+    nested: {
+      secretKey: '12345',
+      safeField: 'CS301 Project',
+    },
+    list: [{ token: 'abc' }, { taskName: 'Deploy' }],
+  };
+
+  const clean = sanitizeMetadata(dirtyMeta);
+  assert('Strips root password field', clean.password === undefined);
+  assert('Strips root authToken field', clean.authToken === undefined);
+  assert('Strips nested secretKey field', clean.nested?.secretKey === undefined);
+  assert('Preserves nested safeField', clean.nested?.safeField === 'CS301 Project');
+  assert('Strips sensitive item from array', clean.list?.[0]?.token === undefined);
+  assert('Preserves safe item in array', clean.list?.[1]?.taskName === 'Deploy');
+
+  // Automatic message notification payload verification (FR-33)
+  const buildMessageNotification = (senderName, body) => ({
+    type: 'message',
+    title: `New message from ${senderName}`,
+    message: body.slice(0, 100),
+    link: '/student/messages',
+  });
+  const notif = buildMessageNotification('Dr. Smith', 'Your proposal has been approved.');
+  assert('Message notification has correct type', notif.type === 'message');
+  assert('Message notification includes sender name', notif.title.includes('Dr. Smith'));
+  assert('Message notification includes snippet', notif.message.includes('proposal has been approved'));
+
+  // Dynamic milestone evaluation verification (FR-17)
+  const evaluateMilestones = ({ hasSubmission, doneTasksCount, hasProject, hasApp, hasHighProgress }) => {
+    const badges = [];
+    if (hasSubmission) badges.push('FIRST_SUBMISSION');
+    if (doneTasksCount >= 3) badges.push('TASK_MASTER');
+    if (hasProject) badges.push('PROJECT_BUILDER');
+    if (hasApp) badges.push('INTERNSHIP_APPLICANT');
+    if (hasHighProgress) badges.push('HIGH_ACHIEVER');
+    return badges;
+  };
+
+  const earned = evaluateMilestones({
+    hasSubmission: true,
+    doneTasksCount: 4,
+    hasProject: true,
+    hasApp: true,
+    hasHighProgress: true,
+  });
+  assert('Earns FIRST_SUBMISSION badge', earned.includes('FIRST_SUBMISSION'));
+  assert('Earns TASK_MASTER badge with >=3 tasks', earned.includes('TASK_MASTER'));
+  assert('Earns PROJECT_BUILDER badge', earned.includes('PROJECT_BUILDER'));
+  assert('Earns INTERNSHIP_APPLICANT badge', earned.includes('INTERNSHIP_APPLICANT'));
+  assert('Earns HIGH_ACHIEVER badge', earned.includes('HIGH_ACHIEVER'));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

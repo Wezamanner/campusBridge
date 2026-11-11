@@ -15,6 +15,7 @@
 import { Project } from '../models/Project.js';
 import { Task } from '../models/Task.js';
 import { ActivityLog } from '../models/ActivityLog.js';
+import { sanitizeMetadata } from '../utils/validation.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /api/v1/projects
@@ -68,7 +69,7 @@ export const createProject = async (req, res, next) => {
       action: 'CREATE_PROJECT',
       targetType: 'Project',
       targetId: project._id,
-      meta: { projectName: project.name },
+      meta: sanitizeMetadata({ projectName: project.name }),
     });
 
     return res.status(201).json({

@@ -16,6 +16,7 @@
 import { Task } from '../models/Task.js';
 import { Project } from '../models/Project.js';
 import { ActivityLog } from '../models/ActivityLog.js';
+import { sanitizeMetadata } from '../utils/validation.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /api/v1/tasks
@@ -82,7 +83,7 @@ export const createTask = async (req, res, next) => {
       action: 'CREATE_TASK',
       targetType: 'Task',
       targetId: task._id,
-      meta: { taskTitle: task.title },
+      meta: sanitizeMetadata({ taskTitle: task.title }),
     });
 
     return res.status(201).json({
@@ -124,7 +125,7 @@ export const updateTask = async (req, res, next) => {
         action: 'COMPLETE_TASK',
         targetType: 'Task',
         targetId: task._id,
-        meta: { taskTitle: task.title },
+        meta: sanitizeMetadata({ taskTitle: task.title }),
       });
     }
 

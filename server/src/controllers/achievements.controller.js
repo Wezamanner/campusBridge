@@ -18,6 +18,9 @@ import { User } from '../models/User.js';
 import { Progress } from '../models/Progress.js';
 import { Submission } from '../models/Submission.js';
 import { Grade } from '../models/Grade.js';
+import { Task } from '../models/Task.js';
+import { Project } from '../models/Project.js';
+import { Application } from '../models/Application.js';
 
 // Format name for FR-17 privacy: "Alex R."
 function formatDisplayName(user) {
@@ -36,17 +39,72 @@ export const getAchievements = async (req, res, next) => {
   try {
     const userId = req.user._id;
 
-    // Check and auto-award FIRST_SUBMISSION badge if student has submitted any assignment
-    const hasSubmission = await Submission.exists({ studentId: userId });
+    // Check and auto-award milestone badges based on real student records
+    const [hasSubmission, doneTasksCount, hasProject, hasApp, hasHighProgress] = await Promise.all([
+      Submission.exists({ studentId: userId }),
+      Task.countDocuments({ ownerId: userId, status: 'done' }),
+      Project.exists({ ownerId: userId, archived: false }),
+      Application.exists({ studentId: userId }),
+      Progress.exists({ studentId: userId, averageScore: { $gte: 90 } }),
+    ]);
+
+    const awardsToEvaluate = [];
+
     if (hasSubmission) {
+      awardsToEvaluate.push({
+        badgeId: 'FIRST_SUBMISSION',
+        title: 'First Step',
+        description: 'Submitted your first assignment on CampusBridge.',
+        icon: 'award',
+      });
+    }
+
+    if (doneTasksCount >= 3) {
+      awardsToEvaluate.push({
+        badgeId: 'TASK_MASTER',
+        title: 'Task Master',
+        description: 'Successfully completed 3 or more personal productivity tasks.',
+        icon: 'check-circle',
+      });
+    }
+
+    if (hasProject) {
+      awardsToEvaluate.push({
+        badgeId: 'PROJECT_BUILDER',
+        title: 'Project Builder',
+        description: 'Created your first personal portfolio or study project.',
+        icon: 'folder-plus',
+      });
+    }
+
+    if (hasApp) {
+      awardsToEvaluate.push({
+        badgeId: 'INTERNSHIP_APPLICANT',
+        title: 'Career Explorer',
+        description: 'Submitted your first internship application with profile CV.',
+        icon: 'briefcase',
+      });
+    }
+
+    if (hasHighProgress) {
+      awardsToEvaluate.push({
+        badgeId: 'HIGH_ACHIEVER',
+        title: 'Academic Distinction',
+        description: 'Achieved an average course grade score of 90% or higher.',
+        icon: 'star',
+      });
+    }
+
+    // Upsert awards idempotently
+    for (const badge of awardsToEvaluate) {
       await Achievement.findOneAndUpdate(
-        { userId, badgeId: 'FIRST_SUBMISSION' },
+        { userId, badgeId: badge.badgeId },
         {
           userId,
-          badgeId: 'FIRST_SUBMISSION',
-          title: 'First Step',
-          description: 'Submitted your first assignment on CampusBridge.',
-          icon: 'award',
+          badgeId: badge.badgeId,
+          title: badge.title,
+          description: badge.description,
+          icon: badge.icon,
         },
         { upsert: true, setDefaultsOnInsert: true }
       );
