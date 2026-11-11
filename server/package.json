@@ -15,6 +15,7 @@
     "test:resources": "PORT=5005 node src/utils/testCourseResources.js",
     "test:assignments": "PORT=5005 node src/utils/testAssignmentManagement.js",
     "test:student-assignments": "PORT=5005 node src/utils/testStudentAssignments.js",
+    "test:grading": "PORT=5005 node src/utils/testGradingFocused.js",
     "seed:users": "node src/utils/seedUsers.js"
   },
   "dependencies": {

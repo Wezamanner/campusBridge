@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { 
-  BookOpen, 
-  Users, 
-  ArrowLeft, 
-  AlertCircle, 
-  CheckCircle2, 
-  Clock, 
-  ShieldCheck, 
-  GraduationCap, 
-  FileText, 
+import {
+  BookOpen,
+  Users,
+  ArrowLeft,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  ShieldCheck,
+  GraduationCap,
+  FileText,
   Search,
   Sparkles,
   Info,
@@ -19,7 +19,9 @@ import {
   File,
   PlusCircle,
   Link2,
-  FolderPlus
+  FolderPlus,
+  Edit,
+  X
 } from 'lucide-react';
 import { api } from '../../services/api.js';
 import AppLayout from '../../layouts/AppLayout.jsx';
@@ -93,6 +95,16 @@ export default function InstructorCourseDetailsPage() {
   const [assignmentError, setAssignmentError] = useState(null);
   const [assignmentSuccess, setAssignmentSuccess] = useState(null);
 
+  // Submission Review & Grading States (Phase 8, FR-08)
+  const [submissions, setSubmissions] = useState([]);
+  const [submissionsLoading, setSubmissionsLoading] = useState(false);
+  const [gradingSubmissionId, setGradingSubmissionId] = useState(null);
+  const [gradingScore, setGradingScore] = useState('');
+  const [gradingFeedback, setGradingFeedback] = useState('');
+  const [gradingError, setGradingError] = useState(null);
+  const [gradingSuccess, setGradingSuccess] = useState(null);
+  const [submittingGrading, setSubmittingGrading] = useState(false);
+
   const fetchCourseDetails = async () => {
     setLoading(true);
     setError(null);
@@ -139,11 +151,26 @@ export default function InstructorCourseDetailsPage() {
     }
   };
 
+  const fetchSubmissions = async () => {
+    setSubmissionsLoading(true);
+    try {
+      const response = await api.get(`/instructor/submissions?courseId=${id}`);
+      if (response.success && Array.isArray(response.data)) {
+        setSubmissions(response.data);
+      }
+    } catch (err) {
+      console.error('Fetch submissions error:', err);
+    } finally {
+      setSubmissionsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (id) {
       fetchCourseDetails();
       fetchResources();
       fetchAssignments();
+      fetchSubmissions();
     }
   }, [id]);
 
@@ -295,6 +322,89 @@ export default function InstructorCourseDetailsPage() {
     }
   };
 
+  const handleGradeSubmission = async (submissionId) => {
+    if (submittingGrading) return;
+
+    setGradingError(null);
+    setGradingSuccess(null);
+
+    const submission = submissions.find((s) => s.id === submissionId);
+    if (!submission) {
+      setGradingError('Submission not found.');
+      return;
+    }
+
+    const assignment = assignments.find((a) => a.id === submission.assignmentId);
+    const maxScore = assignment?.maxScore || 100;
+
+    const trimmedFeedback = gradingFeedback.trim();
+    const score = Number(gradingScore);
+
+    if (gradingScore === '' || gradingScore === null || gradingScore === undefined) {
+      setGradingError('Please enter a score.');
+      return;
+    }
+
+    if (!Number.isFinite(score)) {
+      setGradingError('Score must be a valid number.');
+      return;
+    }
+
+    if (score < 0) {
+      setGradingError('Score cannot be negative.');
+      return;
+    }
+
+    if (score > maxScore) {
+      setGradingError(`Score cannot exceed the assignment maximum score of ${maxScore}.`);
+      return;
+    }
+
+    if (trimmedFeedback.length > 1000) {
+      setGradingError('Feedback cannot exceed 1000 characters.');
+      return;
+    }
+
+    setSubmittingGrading(true);
+    try {
+      const response = await api.patch(`/instructor/submissions/${submissionId}/grade`, {
+        score,
+        feedback: trimmedFeedback,
+      });
+
+      if (response.success) {
+        setGradingSuccess('Submission graded successfully!');
+        setGradingSubmissionId(null);
+        setGradingScore('');
+        setGradingFeedback('');
+        fetchSubmissions();
+      } else {
+        throw new Error(response.message || 'Failed to grade submission.');
+      }
+    } catch (err) {
+      console.error('Grade submission error:', err);
+      setGradingError(err.data?.message || err.message || 'Unable to grade submission.');
+    } finally {
+      setSubmittingGrading(false);
+    }
+  };
+
+  const openGradingModal = (submission) => {
+    setGradingSubmissionId(submission.id);
+    setGradingScore(submission.grade?.score?.toString() || '');
+    setGradingFeedback(submission.grade?.feedback || '');
+    setGradingError(null);
+    setGradingSuccess(null);
+  };
+
+  const cancelGrading = () => {
+    setGradingSubmissionId(null);
+    setGradingScore('');
+    setGradingFeedback('');
+    setGradingError(null);
+    setGradingSuccess(null);
+  };
+
   if (loading) {
     return (
       <AppLayout>
@@ -406,7 +516,7 @@ export default function InstructorCourseDetailsPage() {
           <div className="flex items-start space-x-3 p-3.5 rounded-xl border border-[#00C8FF]/20 bg-[#00C8FF]/5 text-[#8CEBFF] text-xs">
             <Info className="w-4 h-4 flex-shrink-0 mt-0.5 text-[#00C8FF]" />
             <div className="leading-relaxed">
-              <span className="font-bold text-white">Coordinator Ownership Boundary:</span> Course creation, 
+              <span className="font-bold text-white">Coordinator Ownership Boundary:</span> Course creation,
               archiving, and faculty assignments are administered by Academic Coordinators. Assigned instructors hold teaching authority over course resources and grading.
             </div>
           </div>
@@ -466,8 +576,8 @@ export default function InstructorCourseDetailsPage() {
                   </thead>
                   <tbody className="divide-y divide-[#1C2948] text-gray-300">
                     {filteredStudents.map((student) => (
-                      <tr 
-                        key={student.id} 
+                      <tr
+                        key={student.id}
                         className="hover:bg-[#1C2948]/40 transition-colors"
                       >
                         <td className="py-3 px-4 font-semibold text-white">
@@ -516,7 +626,7 @@ export default function InstructorCourseDetailsPage() {
               <div className="flex items-start space-x-3 p-4 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-300 text-xs animate-fadeIn">
                 <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-400" />
                 <div className="flex-1 font-medium">{resourceError}</div>
-                <button 
+                <button
                   onClick={() => setResourceError(null)}
                   className="font-semibold text-rose-400 hover:underline"
                 >
@@ -529,7 +639,7 @@ export default function InstructorCourseDetailsPage() {
               <div className="flex items-start space-x-3 p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-xs animate-fadeIn">
                 <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5 text-emerald-400" />
                 <div className="flex-1 font-medium">{resourceSuccess}</div>
-                <button 
+                <button
                   onClick={() => setResourceSuccess(null)}
                   className="font-semibold text-emerald-400 hover:underline"
                 >
@@ -744,7 +854,7 @@ export default function InstructorCourseDetailsPage() {
               <div className="flex items-start space-x-3 p-4 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-300 text-xs animate-fadeIn">
                 <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-400" />
                 <div className="flex-1 font-medium">{assignmentError}</div>
-                <button 
+                <button
                   onClick={() => setAssignmentError(null)}
                   className="font-semibold text-rose-400 hover:underline"
                 >
@@ -757,7 +867,7 @@ export default function InstructorCourseDetailsPage() {
               <div className="flex items-start space-x-3 p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-xs animate-fadeIn">
                 <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5 text-emerald-400" />
                 <div className="flex-1 font-medium">{assignmentSuccess}</div>
-                <button 
+                <button
                   onClick={() => setAssignmentSuccess(null)}
                   className="font-semibold text-emerald-400 hover:underline"
                 >
@@ -923,6 +1033,232 @@ export default function InstructorCourseDetailsPage() {
                             {formatDate(item.createdAt)}
                           </td>
                         </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </DashboardCard>
+
+        {/* Student Submissions Review & Grading (Phase 8, FR-08) */}
+        <DashboardCard
+          title="Student Submissions & Grading"
+          subtitle="Review submitted work, assign scores, and provide written feedback (FR-08)"
+          icon={FileText}
+          badge={
+            <Badge variant="cyan" size="sm">
+              {submissions.filter((s) => s.status === 'Submitted').length} Ungraded
+            </Badge>
+          }
+        >
+          <div className="p-6 space-y-6">
+            {gradingSuccess && (
+              <div className="flex items-start space-x-3 p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-xs animate-fadeIn">
+                <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5 text-emerald-400" />
+                <div className="flex-1 font-medium">{gradingSuccess}</div>
+                <button
+                  onClick={() => setGradingSuccess(null)}
+                  className="font-semibold text-emerald-400 hover:underline"
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
+
+            {gradingError && (
+              <div className="flex items-start space-x-3 p-4 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-300 text-xs animate-fadeIn">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-400" />
+                <div className="flex-1 font-medium">{gradingError}</div>
+                <button
+                  onClick={() => setGradingError(null)}
+                  className="font-semibold text-rose-400 hover:underline"
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
+
+            {submissionsLoading ? (
+              <LoadingState text="Loading student submissions..." />
+            ) : submissions.length === 0 ? (
+              <EmptyState
+                title="No Student Submissions"
+                message="No students have submitted assignments for this course yet. Submissions will appear here once students begin submitting their work."
+              />
+            ) : (
+              <div className="overflow-x-auto rounded-xl border border-[#1C2948]">
+                <table className="w-full text-left text-xs">
+                  <thead className="border-b border-[#1C2948] bg-[#101735]/80 text-gray-400 uppercase font-bold tracking-wider">
+                    <tr>
+                      <th className="py-3 px-4">Student</th>
+                      <th className="py-3 px-4">Assignment</th>
+                      <th className="py-3 px-4">Submitted</th>
+                      <th className="py-3 px-4">Status</th>
+                      <th className="py-3 px-4">Grade</th>
+                      <th className="py-3 px-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#1C2948] text-gray-300">
+                    {submissions.map((sub) => {
+                      const isGrading = gradingSubmissionId === sub.id;
+                      const assignment = assignments.find((a) => a.id === sub.assignmentId);
+                      const maxScore = assignment?.maxScore || 100;
+
+                      return (
+                        <React.Fragment key={sub.id}>
+                          <tr className="hover:bg-[#1C2948]/40 transition-colors">
+                            <td className="py-3 px-4">
+                              <div className="space-y-0.5">
+                                <p className="font-semibold text-white">{sub.studentName}</p>
+                                <p className="text-[11px] text-gray-400 font-mono">{sub.studentEmail}</p>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <p className="font-semibold text-white max-w-xs truncate">{sub.assignmentTitle}</p>
+                              <p className="text-[11px] text-gray-400">{sub.courseCode}</p>
+                            </td>
+                            <td className="py-3 px-4 text-gray-400 whitespace-nowrap">
+                              {formatDateTime(sub.submittedAt)}
+                            </td>
+                            <td className="py-3 px-4">
+                              <Badge
+                                variant={sub.status === 'Graded' ? 'cyan' : 'amber'}
+                                size="sm"
+                              >
+                                {sub.status}
+                              </Badge>
+                            </td>
+                            <td className="py-3 px-4">
+                              {sub.grade ? (
+                                <span className="font-bold text-white">
+                                  {sub.grade.score} <span className="text-gray-400 font-normal">/ {maxScore}</span>
+                                </span>
+                              ) : (
+                                <span className="text-gray-500 text-xs">Not Graded</span>
+                              )}
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                icon={Edit}
+                                onClick={() => openGradingModal(sub)}
+                              >
+                                {sub.grade ? 'Edit Grade' : 'Grade'}
+                              </Button>
+                            </td>
+                          </tr>
+
+                          {/* Inline Grading Form */}
+                          {isGrading && (
+                            <tr className="bg-[#101735]/60">
+                              <td colSpan={6} className="py-4 px-4">
+                                <div className="p-4 rounded-xl border border-[#00C8FF]/30 bg-[#101735]/80 space-y-4">
+                                  <div className="flex items-center justify-between border-b border-[#1C2948] pb-3">
+                                    <h5 className="text-sm font-bold text-white">Grade Submission</h5>
+                                    <button
+                                      onClick={cancelGrading}
+                                      className="p-1 rounded-lg hover:bg-[#1C2948] transition-colors"
+                                    >
+                                      <X className="w-4 h-4 text-gray-400" />
+                                    </button>
+                                  </div>
+
+                                  {/* Submission Content Preview */}
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {sub.text && (
+                                      <div className="space-y-1">
+                                        <span className="text-[11px] font-semibold text-gray-300">Text Response:</span>
+                                        <div className="p-3 rounded-lg bg-[#1C2948]/60 border border-[#1C2948] text-xs text-gray-200 max-h-32 overflow-y-auto whitespace-pre-wrap">
+                                          {sub.text}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {sub.file && (
+                                      <div className="space-y-1">
+                                        <span className="text-[11px] font-semibold text-gray-300">Attached File:</span>
+                                        <div className="p-3 rounded-lg bg-[#1C2948]/60 border border-[#1C2948] flex items-center justify-between">
+                                          <div>
+                                            <p className="text-xs font-semibold text-white">{sub.file.name}</p>
+                                            <p className="text-[10px] text-gray-400">
+                                              {(sub.file.size / 1024 / 1024).toFixed(2)} MB
+                                            </p>
+                                          </div>
+                                          <a
+                                            href={`${api.baseURL}/assignments/${sub.assignmentId}/submission/download?studentId=${sub.studentId}`}
+                                            download
+                                            className="inline-flex items-center space-x-1 px-2 py-1 rounded-lg text-xs font-semibold bg-[#00C8FF]/15 text-[#00C8FF] border border-[#00C8FF]/30 hover:bg-[#00C8FF]/25 transition-all"
+                                          >
+                                            <Download className="w-3 h-3" />
+                                            <span>Download</span>
+                                          </a>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Grading Form */}
+                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="md:col-span-1 space-y-1">
+                                      <label className="text-[11px] font-semibold text-gray-300">
+                                        Score (0 - {maxScore}) <span className="text-rose-400">*</span>
+                                      </label>
+                                      <input
+                                        type="number"
+                                        min={0}
+                                        max={maxScore}
+                                        step="0.1"
+                                        value={gradingScore}
+                                        onChange={(e) => setGradingScore(e.target.value)}
+                                        placeholder={`Max: ${maxScore}`}
+                                        className="w-full px-3 py-2 rounded-xl border border-[#1C2948] focus:border-[#00C8FF] text-xs outline-none bg-[#101735] text-white"
+                                      />
+                                    </div>
+
+                                    <div className="md:col-span-2 space-y-1">
+                                      <label className="text-[11px] font-semibold text-gray-300">
+                                        Written Feedback (Optional, max 1000 characters)
+                                      </label>
+                                      <textarea
+                                        rows={3}
+                                        value={gradingFeedback}
+                                        onChange={(e) => setGradingFeedback(e.target.value)}
+                                        maxLength={1000}
+                                        placeholder="Provide constructive feedback on the student's work..."
+                                        className="w-full px-3 py-2 rounded-xl border border-[#1C2948] focus:border-[#00C8FF] text-xs outline-none bg-[#101735] text-white resize-none"
+                                      />
+                                      <p className="text-[10px] text-gray-400">
+                                        {gradingFeedback.length} / 1000 characters
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex justify-end space-x-3 pt-2">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={cancelGrading}
+                                    >
+                                      Cancel
+                                    </Button>
+                                    <Button
+                                      variant="primary"
+                                      size="sm"
+                                      icon={CheckCircle2}
+                                      isLoading={submittingGrading}
+                                      onClick={() => handleGradeSubmission(sub.id)}
+                                    >
+                                      Save Grade
+                                    </Button>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
                       );
                     })}
                   </tbody>
