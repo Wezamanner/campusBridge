@@ -7,6 +7,7 @@ import healthRoutes from './routes/health.routes.js';
 import authRoutes from './routes/auth.routes.js';
 import profileRoutes from './routes/profile.routes.js';
 import courseRoutes from './routes/course.routes.js';
+import assignmentRoutes from './routes/assignment.routes.js';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
@@ -38,6 +39,7 @@ app.use('/api/v1/health', healthRoutes);
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/profile', profileRoutes);
 app.use('/api/v1/courses', courseRoutes);
+app.use('/api/v1/assignments', assignmentRoutes);
 
 // Error Handling Middlewares
 app.use(notFound);
