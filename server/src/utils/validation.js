@@ -1,4 +1,5 @@
 import fs from 'fs';
+import path from 'path';
 
 export const ALLOWED_PROFILE_FIELDS = ['name', 'program', 'year', 'skills', 'preferences'];
 
@@ -28,6 +29,25 @@ export const ALLOWED_RESOURCE_MIME_TYPES = [
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'application/vnd.ms-powerpoint',
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'application/zip',
+  'application/x-zip-compressed',
+  'text/plain',
+];
+
+export const ALLOWED_SUBMISSION_EXTENSIONS = ['.pdf', '.doc', '.docx', '.zip', '.txt'];
+
+export const ALLOWED_SUBMISSION_MIME_BY_EXT = {
+  '.pdf': ['application/pdf'],
+  '.doc': ['application/msword'],
+  '.docx': ['application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+  '.zip': ['application/zip', 'application/x-zip-compressed'],
+  '.txt': ['text/plain'],
+};
+
+export const ALLOWED_SUBMISSION_MIME_TYPES = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'application/zip',
   'application/x-zip-compressed',
   'text/plain',
@@ -623,4 +643,39 @@ export function validateAssignmentInput(body) {
     valid: Object.keys(errors).length === 0,
     errors,
   };
+}
+
+/**
+ * Validate assignment submission file signature (FR-07)
+ * Permitted extensions: .pdf, .doc, .docx, .zip, .txt
+ */
+export function validateSubmissionFileSignature(filePath, mimeType, originalnameOrExt) {
+  let ext = (originalnameOrExt || '').toLowerCase();
+  if (!ext.startsWith('.')) {
+    ext = path.extname(ext).toLowerCase();
+  }
+  if (!ALLOWED_SUBMISSION_EXTENSIONS.includes(ext)) {
+    return {
+      valid: false,
+      error: `File extension '${ext}' is not permitted. Permitted formats: ${ALLOWED_SUBMISSION_EXTENSIONS.join(', ')}`,
+    };
+  }
+
+  const validMimes = ALLOWED_SUBMISSION_MIME_BY_EXT[ext];
+  if (!validMimes || !validMimes.includes(mimeType)) {
+    return {
+      valid: false,
+      error: `MIME type '${mimeType}' is not permitted for extension '${ext}'.`,
+    };
+  }
+
+  const isValid = validateResourceFileSignature(filePath, mimeType, ext);
+  if (!isValid) {
+    return {
+      valid: false,
+      error: `Uploaded file signature does not match declared format '${ext}'.`,
+    };
+  }
+
+  return { valid: true };
 }

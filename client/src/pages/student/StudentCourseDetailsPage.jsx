@@ -13,7 +13,11 @@ import {
   Info,
   Download,
   ExternalLink,
-  FileDown
+  FileDown,
+  Clock,
+  Calendar,
+  ChevronRight,
+  ClipboardList
 } from 'lucide-react';
 import { api } from '../../services/api.js';
 import AppLayout from '../../layouts/AppLayout.jsx';
@@ -53,6 +57,24 @@ export default function StudentCourseDetailsPage() {
   const [downloadingId, setDownloadingId] = useState(null);
   const [downloadError, setDownloadError] = useState(null);
 
+  // Course Assignments States (Phase 7)
+  const [assignments, setAssignments] = useState([]);
+  const [assignmentsLoading, setAssignmentsLoading] = useState(false);
+
+  const fetchAssignments = async () => {
+    setAssignmentsLoading(true);
+    try {
+      const response = await api.get(`/assignments?courseId=${id}`);
+      if (response.success && Array.isArray(response.data)) {
+        setAssignments(response.data);
+      }
+    } catch (err) {
+      console.error('Fetch student course assignments error:', err);
+    } finally {
+      setAssignmentsLoading(false);
+    }
+  };
+
   const fetchResources = async () => {
     setResourcesLoading(true);
     setDownloadError(null);
@@ -77,6 +99,7 @@ export default function StudentCourseDetailsPage() {
         setCourse(response.data);
         if (response.data.isEnrolled) {
           fetchResources();
+          fetchAssignments();
         }
       } else {
         throw new Error(response.message || 'Failed to retrieve course details.');
@@ -107,6 +130,7 @@ export default function StudentCourseDetailsPage() {
         setSuccessMessage(`Successfully enrolled in course ${course.code}!`);
         setCourse((prev) => ({ ...prev, isEnrolled: true }));
         fetchResources();
+        fetchAssignments();
       } else {
         throw new Error(response.message || 'Enrollment failed.');
       }
@@ -429,16 +453,96 @@ export default function StudentCourseDetailsPage() {
                   </div>
                 )}
 
-                {/* Phase 6 Notice inside Enrolled View */}
+                {/* Course Assignments Section (FR-07) */}
                 {course.isEnrolled && (
-                  <div className="p-4 rounded-xl border border-[#1C2948] bg-[#101735]/40 text-xs text-gray-300 space-y-1 mt-4">
-                    <div className="flex items-center space-x-2 font-bold text-white">
-                      <GraduationCap className="w-4 h-4 text-purple-400" />
-                      <span>Coursework & Assignments (Phase 6 & 7)</span>
+                  <div className="pt-6 border-t border-[#1C2948] space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <ClipboardList className="w-4 h-4 text-[#00C8FF]" />
+                        <h4 className="text-sm font-bold text-white tracking-wide">
+                          Course Assignments ({assignments.length})
+                        </h4>
+                      </div>
+                      <span className="text-[11px] text-gray-400">
+                        {assignments.filter((a) => a.submissionStatus === 'Submitted' || a.submissionStatus === 'Graded').length} of {assignments.length} Completed
+                      </span>
                     </div>
-                    <p className="text-gray-400 leading-relaxed">
-                      Assignments, submission instructions, and deadlines will be available here once Phase 6 is active.
-                    </p>
+
+                    {assignmentsLoading ? (
+                      <div className="p-6 text-center text-xs text-gray-400 animate-pulse">
+                        Loading course assignments...
+                      </div>
+                    ) : assignments.length === 0 ? (
+                      <div className="p-6 text-center rounded-xl border border-dashed border-[#1C2948] bg-[#101735]/20">
+                        <p className="text-xs text-gray-400">
+                          No assignments have been published for this course yet.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {assignments.map((assignment) => {
+                          const isSubmitted = assignment.submissionStatus === 'Submitted';
+                          const isGraded = assignment.submissionStatus === 'Graded';
+                          const isOverdue = new Date(assignment.deadline) < new Date() && !assignment.allowLate && !isSubmitted && !isGraded;
+
+                          return (
+                            <div
+                              key={assignment.id}
+                              className="p-4 rounded-xl border border-[#1C2948] bg-[#101735]/60 hover:border-[#00C8FF]/40 transition-all flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+                            >
+                              <div className="space-y-1.5 flex-1 min-w-0">
+                                <div className="flex items-center space-x-2 flex-wrap gap-y-1">
+                                  <h5 className="text-sm font-semibold text-white truncate">
+                                    {assignment.title}
+                                  </h5>
+                                  {isGraded ? (
+                                    <Badge variant="cyan" size="sm">
+                                      Graded
+                                    </Badge>
+                                  ) : isSubmitted ? (
+                                    <Badge variant="success" size="sm">
+                                      Submitted
+                                    </Badge>
+                                  ) : isOverdue ? (
+                                    <Badge variant="rose" size="sm">
+                                      Past Due
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="amber" size="sm">
+                                      Pending Submission
+                                    </Badge>
+                                  )}
+                                  {assignment.allowLate && (
+                                    <span className="text-[10px] text-blue-300 font-medium bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
+                                      Late Allowed
+                                    </span>
+                                  )}
+                                </div>
+
+                                <div className="flex items-center space-x-4 text-xs text-gray-400 flex-wrap gap-y-1">
+                                  <div className="flex items-center space-x-1 text-gray-300">
+                                    <Clock className="w-3.5 h-3.5 text-gray-400" />
+                                    <span>Due: {formatDate(assignment.deadline)}</span>
+                                  </div>
+                                  <span>•</span>
+                                  <span>Max Score: {assignment.maxScore} pts</span>
+                                </div>
+                              </div>
+
+                              <div className="flex-shrink-0">
+                                <Link
+                                  to={`/student/assignments/${assignment.id}`}
+                                  className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#00C8FF]/15 text-[#00C8FF] border border-[#00C8FF]/30 hover:bg-[#00C8FF]/25 transition-all"
+                                >
+                                  <span>{isSubmitted || isGraded ? 'View Submission' : 'Submit Work'}</span>
+                                  <ChevronRight className="w-3.5 h-3.5" />
+                                </Link>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

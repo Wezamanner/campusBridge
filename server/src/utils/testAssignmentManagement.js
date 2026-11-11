@@ -398,17 +398,17 @@ async function runAssignmentTests() {
     });
     assert(unauthFilterRes.status === 403, 'Instructor 2 querying Instructor 1 course assignments returns 403');
 
-    // Test 22: Student querying assignments in Phase 6 receives 403 Forbidden (Phase 7 activates student viewing)
+    // Test 22: Enrolled student querying assignments receives 200 OK (Phase 7 activation)
     const studentListRes = await fetch(`${BASE_URL}/assignments?courseId=${activeCourse1._id}`, {
       headers: { Authorization: `Bearer ${tokenStudent1}` },
     });
-    assert(studentListRes.status === 403, 'Student querying assignments in Phase 6 returns 403 Forbidden (FR-07 isolation)');
+    assert(studentListRes.status === 200, 'Enrolled student querying assignments returns 200 OK (Phase 7 activation)');
 
-    // Test 23: Student querying assignments without filter in Phase 6 receives 403 Forbidden
-    const studentListNoFilterRes = await fetch(`${BASE_URL}/assignments`, {
-      headers: { Authorization: `Bearer ${tokenStudent1}` },
+    // Test 23: Unenrolled student querying assignments for non-enrolled course receives 403 Forbidden
+    const unenrolledStudentListRes = await fetch(`${BASE_URL}/assignments?courseId=${activeCourse1._id}`, {
+      headers: { Authorization: `Bearer ${tokenStudent2}` },
     });
-    assert(studentListNoFilterRes.status === 403, 'Student listing assignments in Phase 6 returns 403 Forbidden (FR-07 isolation)');
+    assert(unenrolledStudentListRes.status === 403, 'Unenrolled student querying course assignments returns 403 Forbidden');
 
     // Test 24: Coordinator querying assignments receives 403 Forbidden (unauthorized role)
     const coordListRes = await fetch(`${BASE_URL}/assignments`, {
@@ -437,11 +437,16 @@ async function runAssignmentTests() {
     });
     assert(unauthDetailRes.status === 403, 'Unauthorized instructor viewing assignment details returns 403');
 
-    // Test 27: Student viewing assignment details in Phase 6 receives 403 Forbidden (Phase 7 activates student viewing)
+    // Test 27: Enrolled student viewing assignment details receives 200 OK; unenrolled student receives 403 Forbidden
     const studentDetailRes = await fetch(`${BASE_URL}/assignments/${createdAssignment1.id}`, {
       headers: { Authorization: `Bearer ${tokenStudent1}` },
     });
-    assert(studentDetailRes.status === 403, 'Student viewing assignment details in Phase 6 returns 403 Forbidden (FR-07 isolation)');
+    assert(studentDetailRes.status === 200, 'Enrolled student viewing assignment details returns 200 OK (Phase 7 activation)');
+
+    const unenrolledDetailRes = await fetch(`${BASE_URL}/assignments/${createdAssignment1.id}`, {
+      headers: { Authorization: `Bearer ${tokenStudent2}` },
+    });
+    assert(unenrolledDetailRes.status === 403, 'Unenrolled student viewing assignment details returns 403 Forbidden');
 
     // Test 28: Coordinator viewing assignment details receives 403 Forbidden (unauthorized role)
     const coordDetailRes = await fetch(`${BASE_URL}/assignments/${createdAssignment1.id}`, {

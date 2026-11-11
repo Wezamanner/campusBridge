@@ -8,7 +8,9 @@ import {
   ALLOWED_CV_MIME_TYPES,
   ALLOWED_RESOURCE_EXTENSIONS,
   ALLOWED_RESOURCE_MIME_TYPES,
-  ALLOWED_RESOURCE_MIME_BY_EXT
+  ALLOWED_RESOURCE_MIME_BY_EXT,
+  ALLOWED_SUBMISSION_EXTENSIONS,
+  ALLOWED_SUBMISSION_MIME_BY_EXT
 } from '../utils/validation.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -22,6 +24,9 @@ export const cvDir = path.resolve(__dirname, '../../uploads/cv');
 
 // Private permanent directory for stored course resources (mode 0700)
 export const resourcesDir = path.resolve(__dirname, '../../uploads/resources');
+
+// Private permanent directory for stored assignment submissions (mode 0700, max 5 MB per FR-07)
+export const submissionsDir = path.resolve(__dirname, '../../uploads/submissions');
 
 /**
  * Ensures restrictive 0700 permissions on directory (both existing and newly created).
@@ -41,6 +46,7 @@ try {
   ensureSecureDirectory(tmpDir);
   ensureSecureDirectory(cvDir);
   ensureSecureDirectory(resourcesDir);
+  ensureSecureDirectory(submissionsDir);
 } catch (err) {
   directorySecurityError = err;
   console.error(`[Upload Security Fatal] Failed to secure upload directories: ${err.message}`);
@@ -58,6 +64,7 @@ export function checkUploadSecurity() {
   ensureSecureDirectory(tmpDir);
   ensureSecureDirectory(cvDir);
   ensureSecureDirectory(resourcesDir);
+  ensureSecureDirectory(submissionsDir);
 }
 
 const storage = multer.diskStorage({
@@ -263,6 +270,116 @@ export const handleResourceUpload = (req, res, next) => {
         return res.status(400).json({
           success: false,
           message: "Unexpected upload field. Form field name must be 'file' or 'resource'.",
+        });
+      }
+      if (err.statusCode === 415) {
+        return res.status(415).json({
+          success: false,
+          message: err.message,
+        });
+      }
+      return res.status(400).json({
+        success: false,
+        message: err.message || 'File upload failed.',
+      });
+    }
+
+    next();
+  });
+};
+
+const submissionStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    try {
+      checkUploadSecurity();
+      cb(null, tmpDir);
+    } catch (err) {
+      cb(err, null);
+    }
+  },
+  filename: (_req, file, cb) => {
+    const randomId = crypto.randomUUID();
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `tmp-sub-${randomId}${ext}`);
+  },
+});
+
+function submissionFileFilter(_req, file, cb) {
+  const ext = path.extname(file.originalname).toLowerCase();
+
+  if (!ALLOWED_SUBMISSION_EXTENSIONS.includes(ext)) {
+    const error = new Error(`Unsupported file extension '${ext}'. Permitted: ${ALLOWED_SUBMISSION_EXTENSIONS.join(', ')}.`);
+    error.statusCode = 415;
+    return cb(error, false);
+  }
+
+  const validMimes = ALLOWED_SUBMISSION_MIME_BY_EXT[ext];
+  if (!validMimes || !validMimes.includes(file.mimetype)) {
+    const error = new Error(`MIME type '${file.mimetype}' is not permitted for file extension '${ext}'.`);
+    error.statusCode = 415;
+    return cb(error, false);
+  }
+
+  cb(null, true);
+}
+
+const submissionUpload = multer({
+  storage: submissionStorage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5 MB (5,242,880 bytes) per FR-07 and SEC-07
+    files: 1,
+  },
+  fileFilter: submissionFileFilter,
+}).fields([
+  { name: 'file', maxCount: 1 },
+  { name: 'submission', maxCount: 1 },
+]);
+
+/**
+ * Middleware handling optional or required submission multipart upload.
+ * If request is application/json or non-multipart, gracefully proceeds to next().
+ */
+export const handleSubmissionUpload = (req, res, next) => {
+  if (!req.is('multipart/form-data')) {
+    return next();
+  }
+
+  try {
+    checkUploadSecurity();
+  } catch (secErr) {
+    return res.status(500).json({
+      success: false,
+      message: 'Upload service unavailable: Secure storage permissions could not be established.',
+    });
+  }
+
+  submissionUpload(req, res, (err) => {
+    const uploadedFile = req.files?.file?.[0] || req.files?.submission?.[0];
+    if (uploadedFile) {
+      req.file = uploadedFile;
+    }
+
+    if (err) {
+      if (req.file?.path && fs.existsSync(req.file.path)) {
+        try {
+          fs.unlinkSync(req.file.path);
+        } catch (cleanupErr) {
+          console.warn(
+            `[Submission Cleanup Warning] Failed to delete temporary file ${req.file.path}: ${cleanupErr.message}`
+          );
+        }
+      }
+
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({
+          success: false,
+          message: 'File size exceeds maximum permitted limit of 5 MB.',
+        });
+      }
+      if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+        return res.status(400).json({
+          success: false,
+          message: "Unexpected upload field. Form field name must be 'file' or 'submission'.",
         });
       }
       if (err.statusCode === 415) {

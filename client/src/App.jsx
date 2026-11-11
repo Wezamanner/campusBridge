@@ -9,6 +9,7 @@ import StudentDashboard from './pages/student/StudentDashboard.jsx';
 import StudentProfilePage from './pages/student/StudentProfilePage.jsx';
 import StudentCoursesPage from './pages/student/StudentCoursesPage.jsx';
 import StudentCourseDetailsPage from './pages/student/StudentCourseDetailsPage.jsx';
+import StudentAssignmentDetailsPage from './pages/student/StudentAssignmentDetailsPage.jsx';
 import InstructorDashboard from './pages/instructor/InstructorDashboard.jsx';
 import InstructorCoursesPage from './pages/instructor/InstructorCoursesPage.jsx';
 import InstructorCourseDetailsPage from './pages/instructor/InstructorCourseDetailsPage.jsx';
@@ -361,6 +362,14 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={['student']}>
                 <StudentCourseDetailsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/student/assignments/:id"
+            element={
+              <ProtectedRoute allowedRoles={['student']}>
+                <StudentAssignmentDetailsPage />
               </ProtectedRoute>
             }
           />

@@ -8,12 +8,13 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "test:models": "node src/utils/testModels.js",
-    "test:auth": "node src/utils/testAuth.js",
+    "test:auth": "PORT=5005 node src/utils/testAuth.js",
     "test:profile": "node src/utils/testProfile.js",
     "test:courses": "PORT=5005 node src/utils/testCourseWorkspace.js",
     "test:enrollment": "PORT=5005 node src/utils/testStudentEnrollment.js",
     "test:resources": "PORT=5005 node src/utils/testCourseResources.js",
     "test:assignments": "PORT=5005 node src/utils/testAssignmentManagement.js",
+    "test:student-assignments": "PORT=5005 node src/utils/testStudentAssignments.js",
     "seed:users": "node src/utils/seedUsers.js"
   },
   "dependencies": {
