@@ -330,7 +330,7 @@ paths:
   /progress:
     get:
       summary: View learning progress
-      description: Returns calculated progress from submitted work (FR-09, planned Phase 9). At-risk student monitoring is decoupled and implemented under /instructor/at-risk (Phase 10, UC-I03).
+      description: Returns calculated progress from submitted work (FR-09, Phase 9). At-risk student monitoring is integrated under /instructor/at-risk (Phase 10, UC-I03).
       tags: [Progress & Achievements]
       security:
         - bearerAuth: []

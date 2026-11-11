@@ -392,12 +392,12 @@
         "evaluatedAt": "2026-11-11T09:30:00.000Z"
       },
       "dataAvailability": {
-        "enrollment": { "available": true, "description": "Student enrollment data is available." },
-        "activity": { "available": true, "description": "Platform activity log is available." },
-        "progress": { "available": false, "description": "No progress records found.", "blockedBy": ["Phase 7: Student Submissions", "Phase 8: Grading Queue"] },
-        "submissionHistory": { "available": false, "description": "No submission records found.", "blockedBy": ["Phase 6: Assignment Authoring", "Phase 7: Student Submissions"] },
-        "assignmentPerformance": { "available": false, "blockedBy": ["Phase 6: Assignment Authoring", "Phase 7: Student Submissions", "Phase 8: Grading Queue"] },
-        "progressAnalytics": { "available": false, "blockedBy": ["Phase 9: Student Progress Analytics"] }
+        "enrollment": { "available": true, "description": "Student enrollment data is available (Phase 4)." },
+        "activity": { "available": true, "description": "Platform activity tracking is available (ActivityLog, logins, submissions)." },
+        "progress": { "available": true, "description": "Progress records and analytics active (Phase 9).", "blockedBy": null },
+        "submissionHistory": { "available": true, "description": "Assignment and submission tracking active (Phases 6 & 7).", "blockedBy": null },
+        "assignmentPerformance": { "available": true, "description": "Assignment and grading performance analytics active (Phases 6, 7, 8).", "blockedBy": null },
+        "progressAnalytics": { "available": true, "description": "Progress analytics active (Phase 9).", "blockedBy": null }
       }
     },
     "pagination": null
@@ -408,7 +408,7 @@
 - **Endpoint**: `GET /api/v1/instructor/at-risk/indicators`
 - **SRS Traceability**: UC-I03, FR-16
 - **Role Permissions**: `instructor`
-- **Description**: Returns metadata describing all defined risk indicators, their authoritative data sources, and missing phase dependencies.
+- **Description**: Returns metadata describing all defined risk indicators, their authoritative data sources, and integrated status.
 - **Response `200 OK`**:
   ```json
   {
@@ -419,29 +419,47 @@
         {
           "id": "inactivity",
           "label": "Platform Inactivity",
-          "description": "Student has no recorded platform activity in the ActivityLog.",
+          "description": "Student has no recorded platform activity in ActivityLog, logins, or submissions.",
           "srsReference": "UC-I03 (\"inactivity\")",
-          "dataSource": "ActivityLog collection",
+          "dataSource": "ActivityLog, User logins, and Submission timestamps",
           "available": true,
           "blockedBy": null
         },
         {
           "id": "lowProgress",
           "label": "Low Course Progress",
-          "description": "Student has 0% progress in a course where assignments exist.",
+          "description": "Student has 0% progress in a course where assignments exist, based on Phase 9 progress analytics.",
           "srsReference": "UC-I03 (\"low progress\"), FR-09",
-          "dataSource": "Progress collection (populated by Phase 7 & 8)",
+          "dataSource": "Progress collection & Phase 9 progress calculation",
           "available": true,
-          "blockedBy": ["Phase 7: Student Submissions", "Phase 8: Grading Queue"]
+          "blockedBy": null
         },
         {
           "id": "missedDeadlines",
           "label": "Missed Assignment Deadlines",
           "description": "Student has at least one past-deadline assignment with no submission.",
           "srsReference": "UC-I03 (\"missed deadlines\"), FR-06, FR-07",
-          "dataSource": "Assignment + Submission collections",
+          "dataSource": "Assignment + Submission collections (Phases 6 & 7)",
           "available": true,
-          "blockedBy": ["Phase 6: Assignment Authoring", "Phase 7: Student Submissions"]
+          "blockedBy": null
+        },
+        {
+          "id": "assignmentPerformance",
+          "label": "Assignment Performance Analytics",
+          "description": "Assignment submission and grading performance metrics across assigned courses.",
+          "srsReference": "FR-08, FR-09",
+          "dataSource": "Assignment, Submission, and Grade collections (Phases 6, 7, 8)",
+          "available": true,
+          "blockedBy": null
+        },
+        {
+          "id": "progressAnalytics",
+          "label": "Progress Analytics",
+          "description": "Tracked course completion metrics and average score analytics.",
+          "srsReference": "FR-09",
+          "dataSource": "Progress service and collection (Phase 9)",
+          "available": true,
+          "blockedBy": null
         }
       ]
     },

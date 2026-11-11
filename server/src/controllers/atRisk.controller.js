@@ -1,7 +1,7 @@
 /**
  * At-Risk Student Monitoring Controller
  *
- * Phase 10 — CampusBridge SRS v2.0 Compliance
+ * Phase 10 — CampusBridge SRS v2.0 Compliance (Integrated with Phases 4–9)
  *
  * SRS Traceability:
  *   UC-I03 (Monitor at-risk students) · FR-16 (Instructor dashboard) · FR-44 (Dashboard analytics)
@@ -78,7 +78,7 @@ export const listAtRiskStudents = async (req, res, next) => {
       success: true,
       message:
         atRiskStudents.length === 0
-          ? 'No at-risk students identified in your assigned courses. Indicators may be insufficient_data if Phase 6–9 are not yet active.'
+          ? 'No at-risk students identified in your assigned courses.'
           : `${atRiskStudents.length} at-risk student(s) identified across assigned courses.`,
       data: {
         atRiskStudents: responseData,
@@ -185,9 +185,7 @@ export const getAtRiskSummary = async (req, res, next) => {
 /**
  * @route   GET /api/v1/instructor/at-risk/indicators
  * @desc    Returns metadata about all defined risk indicators:
- *          which are available, which are blocked by missing phases,
- *          and what each flag evaluates.
- *          Allows the frontend to render accurate data-availability notices.
+ *          which are available, data sources, and evaluation rules.
  * @access  Protected — instructor only
  */
 export const getRiskIndicators = async (req, res, next) => {
@@ -201,9 +199,9 @@ export const getRiskIndicators = async (req, res, next) => {
             id: 'inactivity',
             label: 'Platform Inactivity',
             description:
-              'Student has no recorded platform activity in the ActivityLog. Flagged when no actions have been logged at all.',
+              'Student has no recorded platform activity in ActivityLog, logins, or submissions. Flagged when no activity has been recorded at all.',
             srsReference: 'UC-I03 ("inactivity")',
-            dataSource: 'ActivityLog collection',
+            dataSource: 'ActivityLog, User logins, and Submission timestamps',
             available: true,
             blockedBy: null,
           },
@@ -211,50 +209,43 @@ export const getRiskIndicators = async (req, res, next) => {
             id: 'lowProgress',
             label: 'Low Course Progress',
             description:
-              'Student has 0% progress in a course where assignments exist, based on the Progress collection. Returns insufficient_data when no Progress record exists (requires Phase 7 submissions and Phase 8 grading to populate).',
+              'Student has 0% progress in a course where assignments exist, based on Phase 9 progress analytics. Returns insufficient_data when no assignments exist in the course.',
             srsReference: 'UC-I03 ("low progress"), FR-09',
-            dataSource: 'Progress collection (populated by Phase 7 & 8)',
+            dataSource: 'Progress collection & Phase 9 progress calculation',
             available: true,
-            note: 'Data availability depends on whether Progress records have been created by submission and grading activity.',
-            blockedBy: ['Phase 7: Student Submissions', 'Phase 8: Grading Queue'],
+            note: 'Evaluated using authoritative assignment and submission progress records.',
+            blockedBy: null,
           },
           {
             id: 'missedDeadlines',
             label: 'Missed Assignment Deadlines',
             description:
-              'Student has at least one past-deadline assignment with no submission. Returns insufficient_data when no past-deadline assignments exist in the course (requires Phase 6 assignment creation).',
+              'Student has at least one past-deadline assignment with no submission. Returns insufficient_data when no assignment records exist in the course.',
             srsReference: 'UC-I03 ("missed deadlines"), FR-06, FR-07',
-            dataSource: 'Assignment + Submission collections (populated by Phase 6 & 7)',
+            dataSource: 'Assignment + Submission collections (Phases 6 & 7)',
             available: true,
-            note: 'Only evaluable once at least one assignment with a past deadline exists (Phase 6 dependency).',
-            blockedBy: [
-              'Phase 6: Assignment Authoring',
-              'Phase 7: Student Submissions',
-            ],
+            note: 'Future deadlines and submitted assignments are not counted as missed.',
+            blockedBy: null,
           },
           {
             id: 'assignmentPerformance',
             label: 'Assignment Performance Analytics',
             description:
-              'Score trends, feedback patterns, and submission velocity. Not yet implemented.',
-            srsReference: 'FR-08, FR-09 (future)',
-            dataSource: 'Grade collection (Phase 8 dependency)',
-            available: false,
-            blockedBy: [
-              'Phase 6: Assignment Authoring',
-              'Phase 7: Student Submissions',
-              'Phase 8: Grading Queue',
-            ],
+              'Assignment submission and grading performance metrics across assigned courses.',
+            srsReference: 'FR-08, FR-09',
+            dataSource: 'Assignment, Submission, and Grade collections (Phases 6, 7, 8)',
+            available: true,
+            blockedBy: null,
           },
           {
             id: 'progressAnalytics',
-            label: 'Progress Trend Analytics',
+            label: 'Progress Analytics',
             description:
-              'Advanced computed metrics including trend lines and deadline velocity. Not yet implemented.',
-            srsReference: 'FR-09 (future Phase 9)',
-            dataSource: 'Progress Analytics Service (Phase 9 dependency)',
-            available: false,
-            blockedBy: ['Phase 9: Student Progress Analytics'],
+              'Tracked course completion metrics and average score analytics.',
+            srsReference: 'FR-09',
+            dataSource: 'Progress service and collection (Phase 9)',
+            available: true,
+            blockedBy: null,
           },
         ],
       },

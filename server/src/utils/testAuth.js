@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
 import { config } from '../config/env.js';
+import { connectDB } from '../config/db.js';
 import { User } from '../models/User.js';
 import '../server.js'; // Starts Express server and connects MongoDB
 
@@ -8,8 +9,18 @@ const BASE_URL = `http://localhost:${config.port}/api/v1/auth`;
 
 async function runAuthTests() {
   console.log('--- Starting CampusBridge Phase 3 Authentication & RBAC Test Suite ---');
-  // Wait brief moment for Express to bind to port
-  await new Promise((resolve) => setTimeout(resolve, 800));
+  await connectDB();
+  // Wait for server to be responsive
+  for (let i = 0; i < 30; i++) {
+    try {
+      const res = await fetch(`http://localhost:${config.port}/api/v1/health`);
+      if (res.ok) {
+        break;
+      }
+    } catch (e) {
+      await new Promise((r) => setTimeout(r, 300));
+    }
+  }
 
   const results = {
     passed: 0,

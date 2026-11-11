@@ -6,7 +6,11 @@ import { connectDB } from './config/db.js';
 import healthRoutes from './routes/health.routes.js';
 import authRoutes from './routes/auth.routes.js';
 import profileRoutes from './routes/profile.routes.js';
+import courseRoutes from './routes/course.routes.js';
+import assignmentRoutes from './routes/assignment.routes.js';
 import atRiskRoutes from './routes/atRisk.routes.js';
+import instructorRoutes from './routes/instructor.routes.js';
+import progressRoutes from './routes/progress.routes.js';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
@@ -37,7 +41,11 @@ app.get('/', (req, res) => {
 app.use('/api/v1/health', healthRoutes);
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/profile', profileRoutes);
+app.use('/api/v1/courses', courseRoutes);
+app.use('/api/v1/assignments', assignmentRoutes);
 app.use('/api/v1/instructor/at-risk', atRiskRoutes); // Phase 10: At-Risk Student Monitoring (UC-I03, FR-16, FR-44)
+app.use('/api/v1/instructor', instructorRoutes);
+app.use('/api/v1/progress', progressRoutes);
 
 // Error Handling Middlewares
 app.use(notFound);
