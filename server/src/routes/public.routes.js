@@ -80,6 +80,7 @@ router.get('/announcements', async (req, res, next) => {
     const normalised = announcements.map(a => ({
       _id:         a._id,
       title:       a.message,
+      content:     a.message,   // expose full text as content too
       publishedAt: a.startsAt,
       priority:    'low',   // Announcement model has no priority; default to low
     }));

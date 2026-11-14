@@ -296,7 +296,7 @@ export default function AtRiskMonitoringPage() {
               }
               description={
                 atRiskStudents.length === 0
-                  ? 'No students in your assigned courses are currently flagged. Some indicators may show "No Data" if Phase 6–9 are not yet active.'
+                  ? 'No students in your assigned courses are currently flagged. All students appear to be performing within acceptable thresholds.'
                   : 'Try adjusting your search query or filters.'
               }
             />

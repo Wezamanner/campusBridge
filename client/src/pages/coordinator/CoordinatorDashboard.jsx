@@ -63,6 +63,10 @@ export default function CoordinatorDashboard() {
     return () => clearTimeout(timer);
   }, [location.pathname]);
 
+  // Live course and internship counts
+  const [courseCount, setCourseCount] = useState(null);
+  const [internshipCount, setInternshipCount] = useState(null);
+
   // Organizations state
   const [organizations, setOrganizations] = useState([]);
   const [orgsLoading, setOrgsLoading] = useState(true);
@@ -173,6 +177,20 @@ export default function CoordinatorDashboard() {
       setAppsLoading(false);
     }
   };
+
+  // Fetch live counts for stat cards on mount
+  useEffect(() => {
+    // Active courses count
+    import('../../services/api.js').then(({ api }) => {
+      api.get('/coordinator/courses').then(res => {
+        if (res.success) setCourseCount((res.data || []).filter(c => c.status === 'active').length);
+      }).catch(() => {});
+      // Open internships count
+      api.get('/coordinator/internships').then(res => {
+        if (res.success) setInternshipCount((res.data || []).filter(i => i.status === 'open').length);
+      }).catch(() => {});
+    });
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -514,10 +532,10 @@ export default function CoordinatorDashboard() {
           <StatCard
             icon={BookOpen}
             label="Active Courses"
-            value="12"
-            trend="+2"
+            value={courseCount !== null ? String(courseCount) : '—'}
+            trend={courseCount !== null ? 'active courses' : ''}
             accentColor="#00C8FF"
-            sparklineData={[8, 9, 9, 10, 11, 11, 12]}
+            sparklineData={[1,1,2,2,3,3,Math.max(courseCount||1,1)]}
           />
           <StatCard
             icon={Building2}
@@ -530,10 +548,10 @@ export default function CoordinatorDashboard() {
           <StatCard
             icon={Briefcase}
             label="Open Internships"
-            value="15"
-            trend="4 ending soon"
+            value={internshipCount !== null ? String(internshipCount) : '—'}
+            trend={internshipCount !== null ? 'open positions' : ''}
             accentColor="#8CEBFF"
-            sparklineData={[10, 12, 11, 14, 13, 14, 15]}
+            sparklineData={[1,1,2,2,3,3,Math.max(internshipCount||1,1)]}
           />
           <StatCard
             icon={Download}

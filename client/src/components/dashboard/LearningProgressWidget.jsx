@@ -1,20 +1,35 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardCard from '../ui/DashboardCard.jsx';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, Loader2 } from 'lucide-react';
+import { api } from '../../services/api.js';
 
-export default function LearningProgressWidget({
-  overallPercent = 70,
-  courses = [
-    { title: 'Quran & Islamic Studies', percent: 90, color: '#10B981' },
-    { title: 'Programming', percent: 70, color: '#00C8FF' },
-    { title: 'English', percent: 60, color: '#A855F7' },
-    { title: 'Water Resources Eng.', percent: 65, color: '#06B6D4' },
-  ],
-  className = '',
-}) {
+const COURSE_COLORS = ['#10B981', '#00C8FF', '#A855F7', '#06B6D4', '#F59E0B', '#EF4444'];
+
+export default function LearningProgressWidget({ className = '' }) {
+  const [progressData, setProgressData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.get('/progress')
+      .then(res => {
+        if (res.success) setProgressData(res.data);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  // Derive display values from real data
+  const courses = progressData?.courses || [];
+  const overallPercent = progressData?.overallPercent ??
+    (courses.length > 0
+      ? Math.round(courses.reduce((s, c) => s + (c.completionPercent || 0), 0) / courses.length)
+      : null);
+
   const radius = 38;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (overallPercent / 100) * circumference;
+  const strokeDashoffset = overallPercent != null
+    ? circumference - (overallPercent / 100) * circumference
+    : circumference;
 
   return (
     <DashboardCard
@@ -24,82 +39,79 @@ export default function LearningProgressWidget({
       actionLink="/student/courses"
       className={className}
     >
-      <div className="flex flex-col sm:flex-row items-center gap-6">
-        {/* Circular Progress Ring */}
-        <div className="relative w-36 h-36 flex-shrink-0 flex items-center justify-center">
-          <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-            {/* Background Circle */}
-            <circle
-              cx="50"
-              cy="50"
-              r={radius}
-              className="stroke-[#101735] dark:stroke-[#101735] light:stroke-gray-100"
-              strokeWidth="9"
-              fill="transparent"
-            />
-            {/* Animated Progress Circle */}
-            <circle
-              cx="50"
-              cy="50"
-              r={radius}
-              stroke="url(#cyanGradient)"
-              strokeWidth="9"
-              strokeDasharray={circumference}
-              strokeDashoffset={strokeDashoffset}
-              strokeLinecap="round"
-              fill="transparent"
-              className="transition-all duration-1000 ease-out"
-            />
-            <defs>
-              <linearGradient id="cyanGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#8CEBFF" />
-                <stop offset="100%" stopColor="#00C8FF" />
-              </linearGradient>
-            </defs>
-          </svg>
-
-          {/* Center Percentage Display */}
-          <div className="absolute flex flex-col items-center justify-center text-center">
-            <span className="text-2xl font-black text-white dark:text-white light:text-gray-900 tracking-tight">
-              {overallPercent}%
-            </span>
-            <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">
-              Overall Progress
-            </span>
-          </div>
+      {loading ? (
+        <div className="flex justify-center py-8">
+          <Loader2 className="w-6 h-6 text-[#00C8FF] animate-spin" />
         </div>
-
-        {/* Course Progress Breakdown List */}
-        <div className="flex-1 w-full space-y-3">
-          {courses.map((course, idx) => (
-            <div key={idx} className="space-y-1">
-              <div className="flex items-center justify-between text-xs font-semibold">
-                <span className="flex items-center space-x-2 text-gray-300 dark:text-gray-300 light:text-gray-700">
-                  <span
-                    className="w-2.5 h-2.5 rounded-full"
-                    style={{ backgroundColor: course.color }}
-                  />
-                  <span>{course.title}</span>
-                </span>
-                <span className="font-bold text-white dark:text-white light:text-gray-900">
-                  {course.percent}%
-                </span>
-              </div>
-
-              {/* Progress Bar */}
-              <div className="w-full h-1.5 rounded-full bg-[#101735] dark:bg-[#101735] light:bg-gray-100 overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-700"
-                  style={{
-                    width: `${course.percent}%`,
-                    backgroundColor: course.color,
-                  }}
-                />
-              </div>
+      ) : overallPercent == null ? (
+        <div className="py-6 text-center">
+          <BookOpen className="w-8 h-8 mx-auto mb-2 opacity-30" style={{ color: 'var(--cb-text-muted)' }} />
+          <p className="text-xs" style={{ color: 'var(--cb-text-muted)' }}>
+            Enrol in courses to see your learning progress here.
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col sm:flex-row items-center gap-6">
+          {/* Circular Progress Ring */}
+          <div className="relative w-36 h-36 flex-shrink-0 flex items-center justify-center">
+            <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r={radius} stroke="var(--cb-border)" strokeWidth="9" fill="transparent" />
+              <circle
+                cx="50" cy="50" r={radius}
+                stroke="url(#cyanGradientLP)"
+                strokeWidth="9"
+                strokeDasharray={circumference}
+                strokeDashoffset={strokeDashoffset}
+                strokeLinecap="round"
+                fill="transparent"
+                className="transition-all duration-1000 ease-out"
+              />
+              <defs>
+                <linearGradient id="cyanGradientLP" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#8CEBFF" />
+                  <stop offset="100%" stopColor="#00C8FF" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <div className="absolute flex flex-col items-center justify-center text-center">
+              <span className="text-2xl font-black tracking-tight" style={{ color: 'var(--cb-text)' }}>
+                {overallPercent}%
+              </span>
+              <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--cb-text-muted)' }}>
+                Overall
+              </span>
             </div>
-          ))}
+          </div>
+
+          {/* Course Breakdown */}
+          {courses.length > 0 ? (
+            <div className="flex-1 w-full space-y-3">
+              {courses.slice(0, 4).map((course, idx) => {
+                const pct = course.completionPercent || 0;
+                const color = COURSE_COLORS[idx % COURSE_COLORS.length];
+                return (
+                  <div key={course.courseId || idx} className="space-y-1">
+                    <div className="flex items-center justify-between text-xs font-semibold">
+                      <span className="flex items-center space-x-2" style={{ color: 'var(--cb-text-muted)' }}>
+                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
+                        <span className="truncate max-w-[120px]">{course.courseCode || course.courseTitle || 'Course'}</span>
+                      </span>
+                      <span className="font-bold" style={{ color: 'var(--cb-text)' }}>{pct}%</span>
+                    </div>
+                    <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--cb-border)' }}>
+                      <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, backgroundColor: color }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-xs" style={{ color: 'var(--cb-text-muted)' }}>
+              Course breakdown will appear once you are enrolled.
+            </p>
+          )}
         </div>
-      </div>
+      )}
     </DashboardCard>
   );
 }
