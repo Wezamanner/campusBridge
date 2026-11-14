@@ -8,7 +8,6 @@ import {
   ArrowRight, 
   AlertCircle, 
   Loader2, 
-  KeyRound,
   Sparkles 
 } from 'lucide-react';
 
@@ -48,13 +47,6 @@ export default function LoginPage() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  // Preset quick fill for test accounts
-  const fillCredentials = (presetEmail, presetPass) => {
-    setEmail(presetEmail);
-    setPassword(presetPass);
-    setErrorMessage('');
   };
 
   return (
@@ -162,49 +154,6 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Demo Fast-Login Drawer */}
-        <div className="p-4 rounded-xl bg-[#1C2948]/40 border border-[#1C2948] text-xs space-y-2">
-          <div className="flex items-center justify-between text-[#8CEBFF]">
-            <span className="font-semibold flex items-center gap-1.5">
-              <KeyRound className="w-3.5 h-3.5 text-[#00C8FF]" />
-              Quick Role Test Helpers
-            </span>
-            <span className="text-[10px] uppercase tracking-wide opacity-60">Phase 3</span>
-          </div>
-          <p className="text-gray-400 text-[11px]">
-            Click below to auto-populate test credentials for any of the four roles:
-          </p>
-          <div className="grid grid-cols-2 gap-2 pt-1">
-            <button
-              type="button"
-              onClick={() => fillCredentials('student@campusbridge.edu', 'StudentPass123!')}
-              className="px-2.5 py-1.5 rounded-lg bg-[#101735] border border-[#1C2948] hover:border-[#00C8FF] text-left text-[11px] text-[#8CEBFF]"
-            >
-              🎓 Student
-            </button>
-            <button
-              type="button"
-              onClick={() => fillCredentials('instructor@campusbridge.edu', 'InstructorPass123!')}
-              className="px-2.5 py-1.5 rounded-lg bg-[#101735] border border-[#1C2948] hover:border-[#00C8FF] text-left text-[11px] text-[#8CEBFF]"
-            >
-              📚 Instructor
-            </button>
-            <button
-              type="button"
-              onClick={() => fillCredentials('coordinator@campusbridge.edu', 'CoordinatorPass123!')}
-              className="px-2.5 py-1.5 rounded-lg bg-[#101735] border border-[#1C2948] hover:border-[#00C8FF] text-left text-[11px] text-[#8CEBFF]"
-            >
-              💼 Coordinator
-            </button>
-            <button
-              type="button"
-              onClick={() => fillCredentials('admin@campusbridge.edu', 'AdminPass123!')}
-              className="px-2.5 py-1.5 rounded-lg bg-[#101735] border border-[#1C2948] hover:border-[#00C8FF] text-left text-[11px] text-[#8CEBFF]"
-            >
-              🛡️ Administrator
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );
