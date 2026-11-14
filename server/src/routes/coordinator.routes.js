@@ -177,6 +177,24 @@ router.patch('/applications/:id/interview', scheduleInterview);
  */
 router.get('/applications/:id/interview', getInterviewSchedule);
 
+/**
+ * @route   GET /api/v1/coordinator/instructors
+ * @desc    List active instructors (name + id only) for course assignment.
+ *          Narrow-scoped — does NOT expose personal data, passwords, or admin fields.
+ * @access  Coordinator only
+ */
+router.get('/instructors', async (req, res, next) => {
+  try {
+    const { User } = await import('../models/User.js');
+    const instructors = await User.find({ role: 'instructor', active: true, deletedAt: null })
+      .select('_id name email department')
+      .sort({ name: 1 });
+    res.status(200).json({ success: true, instructors });
+  } catch (error) {
+    next(error);
+  }
+});
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Additional Coordinator Routes for Testing

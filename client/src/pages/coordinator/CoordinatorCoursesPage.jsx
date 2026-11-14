@@ -65,9 +65,12 @@ export default function CoordinatorCoursesPage() {
 
   const fetchInstructors = async () => {
     try {
-      const res = await api.get('/admin/users?role=instructor&limit=100');
-      if (res.success) setInstructors(res.data || []);
-    } catch { /* silent */ }
+      const res = await api.get('/coordinator/instructors');
+      if (res.success) setInstructors(res.instructors || []);
+    } catch {
+      // Non-critical — instructor dropdown will be empty; coordinator can still create course
+      console.warn('Could not load instructors list for coordinator.');
+    }
   };
 
   useEffect(() => {

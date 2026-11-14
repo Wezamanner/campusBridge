@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import AppLayout from '../../layouts/AppLayout.jsx';
 import WelcomeBanner from '../../components/dashboard/WelcomeBanner.jsx';
 import StatCard from '../../components/ui/StatCard.jsx';
@@ -26,7 +27,38 @@ import {
   AlertCircle
 } from 'lucide-react';
 
+const ADMIN_PATH_TO_SECTION = {
+  '/admin/reports':       'section-reports',
+  '/admin/users':         'section-users',
+  '/admin/settings':      'section-settings',
+  '/admin/announcements': 'section-announcements',
+  '/admin/content':       'section-content',
+};
+
 export default function AdminDashboard() {
+  const location = useLocation();
+
+  const sectionRefs = {
+    'section-reports':       useRef(null),
+    'section-users':         useRef(null),
+    'section-settings':      useRef(null),
+    'section-announcements': useRef(null),
+    'section-content':       useRef(null),
+  };
+
+  useEffect(() => {
+    const targetId = ADMIN_PATH_TO_SECTION[location.pathname];
+    if (!targetId) return;
+    const timer = setTimeout(() => {
+      const el = sectionRefs[targetId]?.current;
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        el.focus({ preventScroll: true });
+      }
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [location.pathname]);
+
   // User management state
   const [users, setUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(true);
@@ -426,7 +458,8 @@ export default function AdminDashboard() {
           />
         </div>
 
-        {/* Reports Section */}
+        {/* Reports Section — id: section-reports */}
+        <div ref={sectionRefs['section-reports']} tabIndex={-1} className="outline-none scroll-mt-20">
         <DashboardCard
           title="System Reports & Analytics"
           subtitle="Export CSV reports for progress tracking and applications monitoring"
@@ -483,7 +516,9 @@ export default function AdminDashboard() {
           </div>
         </DashboardCard>
 
-        {/* Users Management Table */}
+        {/* Users Management Table — id: section-users */}
+        </div>{/* end section-reports */}
+        <div ref={sectionRefs['section-users']} tabIndex={-1} className="outline-none scroll-mt-20">
         <DashboardCard
           title="User Accounts & Provisioning"
           subtitle="Manage student, instructor, and coordinator credentials, roles, and status"
@@ -598,7 +633,9 @@ export default function AdminDashboard() {
           )}
         </DashboardCard>
 
-        {/* Platform Settings & Self-Registration */}
+        {/* Platform Settings & Self-Registration — id: section-settings */}
+        </div>{/* end section-users */}
+        <div ref={sectionRefs['section-settings']} tabIndex={-1} className="outline-none scroll-mt-20">
         <DashboardCard
           title="Platform Settings & Registration Control"
           subtitle="Configure system-wide student self-registration availability (FR-24, UC-A03)"
@@ -632,7 +669,9 @@ export default function AdminDashboard() {
           </div>
         </DashboardCard>
 
-        {/* Announcements Management */}
+        {/* Announcements Management — id: section-announcements */}
+        </div>{/* end section-settings */}
+        <div ref={sectionRefs['section-announcements']} tabIndex={-1} className="outline-none scroll-mt-20">
         <DashboardCard
           title="Campus Announcements"
           subtitle="Publish global notices to students, instructors, and public visitors (FR-24, UC-A03, UC-A04)"
@@ -713,8 +752,10 @@ export default function AdminDashboard() {
             </div>
           </div>
         </DashboardCard>
+        </div>{/* end section-announcements */}
 
-        {/* Public Website Content */}
+        {/* Public Website Content — id: section-content */}
+        <div ref={sectionRefs['section-content']} tabIndex={-1} className="outline-none scroll-mt-20">
         <DashboardCard
           title="Public Website Content Management"
           subtitle="Configure marketing text blocks on the public landing page (FR-46, FR-47, UC-A04)"
@@ -757,6 +798,7 @@ export default function AdminDashboard() {
             </Button>
           </form>
         </DashboardCard>
+        </div>{/* end section-content */}
       </div>
 
       {/* Edit User Modal */}

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import AppLayout from '../../layouts/AppLayout.jsx';
 import WelcomeBanner from '../../components/dashboard/WelcomeBanner.jsx';
 import StatCard from '../../components/ui/StatCard.jsx';
@@ -28,7 +29,40 @@ import {
   X
 } from 'lucide-react';
 
+// Map URL pathname → section ref id
+const PATH_TO_SECTION = {
+  '/coordinator/companies':    'section-companies',
+  '/coordinator/internships':  'section-internships',
+  '/coordinator/applications': 'section-applications',
+  '/coordinator/reports':      'section-reports',
+};
+
 export default function CoordinatorDashboard() {
+  const location = useLocation();
+
+  // Section refs for URL-driven scroll
+  const sectionRefs = {
+    'section-companies':    useRef(null),
+    'section-internships':  useRef(null),
+    'section-applications': useRef(null),
+    'section-reports':      useRef(null),
+  };
+
+  // Scroll to the section indicated by the current pathname
+  useEffect(() => {
+    const targetId = PATH_TO_SECTION[location.pathname];
+    if (!targetId) return;
+    // Wait for DOM paint before scrolling
+    const timer = setTimeout(() => {
+      const el = sectionRefs[targetId]?.current;
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        el.focus({ preventScroll: true });
+      }
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [location.pathname]);
+
   // Organizations state
   const [organizations, setOrganizations] = useState([]);
   const [orgsLoading, setOrgsLoading] = useState(true);
@@ -511,7 +545,8 @@ export default function CoordinatorDashboard() {
           />
         </div>
 
-        {/* Reports Section */}
+        {/* Reports Section — id: section-reports */}
+        <div ref={sectionRefs['section-reports']} tabIndex={-1} className="outline-none scroll-mt-20">
         <DashboardCard
           title="Coordinator Reports & Analytics"
           subtitle="Export CSV reports for progress tracking and applications monitoring"
@@ -554,8 +589,10 @@ export default function CoordinatorDashboard() {
             </div>
           </div>
         </DashboardCard>
+        </div>{/* end section-reports */}
 
-        {/* Partner Organizations Management */}
+        {/* Partner Organizations Management — id: section-companies */}
+        <div ref={sectionRefs['section-companies']} tabIndex={-1} className="outline-none scroll-mt-20">
         <DashboardCard
           title="Partner Organization Approval Workflow"
           subtitle="Review and approve partner organizations for internship placements"
@@ -655,8 +692,10 @@ export default function CoordinatorDashboard() {
             </>
           )}
         </DashboardCard>
+        </div>{/* end section-companies */}
 
-        {/* Internship Posting & Creation (UC-C03) */}
+        {/* Internship Posting & Creation (UC-C03) — id: section-internships */}
+        <div ref={sectionRefs['section-internships']} tabIndex={-1} className="outline-none scroll-mt-20">
         <DashboardCard
           title="Internship Placement Management"
           subtitle="Publish verified corporate internship opportunities for students (UC-C03)"
@@ -682,8 +721,10 @@ export default function CoordinatorDashboard() {
             </Button>
           </div>
         </DashboardCard>
+        </div>{/* end section-internships */}
 
-        {/* Student Applications Review & Forwarding Workflow (UC-C05, UC-C06, UC-C07) */}
+        {/* Student Applications Review & Forwarding — id: section-applications */}
+        <div ref={sectionRefs['section-applications']} tabIndex={-1} className="outline-none scroll-mt-20">
         <DashboardCard
           title="Student Applications Review & Forwarding"
           subtitle="Screen student applications, forward qualified candidates to employer, and record hiring decisions"
@@ -770,8 +811,8 @@ export default function CoordinatorDashboard() {
             </>
           )}
         </DashboardCard>
+        </div>{/* end section-applications */}
       </div>
-
       {/* Create Internship Modal (UC-C03) */}
       {showCreateInternship && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">

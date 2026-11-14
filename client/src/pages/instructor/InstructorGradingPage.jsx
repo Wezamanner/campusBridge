@@ -216,10 +216,10 @@ export default function InstructorGradingPage() {
                         <Badge variant={statusVariants[sub.status] || 'neutral'} size="sm">
                           {sub.status}
                         </Badge>
-                        {isGraded && sub.score !== undefined && (
+                        {isGraded && sub.grade?.score !== undefined && (
                           <span className="flex items-center gap-1 text-xs font-bold text-emerald-400">
                             <Star className="w-3.5 h-3.5" />
-                            {sub.score}/{sub.assignmentId?.totalPoints || '?'}
+                            {sub.grade.score}/{sub.assignmentId?.totalPoints || '?'}
                           </span>
                         )}
                         <button
@@ -236,44 +236,43 @@ export default function InstructorGradingPage() {
                     {isExpanded && (
                       <div className="ml-11 p-4 rounded-xl bg-[#1C2948]/30 border border-[#1C2948] space-y-4">
                         {/* Submission content */}
-                        {sub.content && (
+                        {sub.text && (
                           <div>
                             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
                               Submission Content
                             </p>
                             <p className="text-sm text-gray-200 whitespace-pre-wrap leading-relaxed bg-[#101735]/60 p-3 rounded-lg border border-[#1C2948]">
-                              {sub.content}
+                              {sub.text}
                             </p>
                           </div>
                         )}
 
-                        {sub.fileUrl && (
+                        {sub.file && sub.file.name && (
                           <div>
                             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
                               Attached File
                             </p>
-                            <a
-                              href={sub.fileUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-sm text-[#00C8FF] hover:underline flex items-center gap-1.5"
-                            >
+                            <div className="flex items-center gap-2 text-sm text-[#00C8FF]">
                               <FileText className="w-4 h-4" />
-                              {sub.fileName || 'Download submission file'}
-                            </a>
+                              <span>{sub.file.name}</span>
+                              <span className="text-xs text-gray-500">
+                                ({sub.file.mimeType || 'file'}{sub.file.size ? `, ${Math.round(sub.file.size / 1024)}KB` : ''})
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">File downloads are handled through the submission management system.</p>
                           </div>
                         )}
 
                         {/* Existing grade (if already graded) */}
-                        {isGraded && (
+                        {isGraded && sub.grade && (
                           <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 space-y-1">
                             <p className="text-xs font-semibold text-emerald-400">Already Graded</p>
                             <p className="text-sm text-white">
-                              Score: <span className="font-bold">{sub.score}</span>
+                              Score: <span className="font-bold">{sub.grade.score}</span>
                               {sub.assignmentId?.totalPoints ? `/${sub.assignmentId.totalPoints}` : ''}
                             </p>
-                            {sub.feedback && (
-                              <p className="text-xs text-gray-300">Feedback: {sub.feedback}</p>
+                            {sub.grade.feedback && (
+                              <p className="text-xs text-gray-300">Feedback: {sub.grade.feedback}</p>
                             )}
                           </div>
                         )}
@@ -305,7 +304,7 @@ export default function InstructorGradingPage() {
                                 min={0}
                                 max={sub.assignmentId?.totalPoints}
                                 step={0.5}
-                                defaultValue={isGraded ? sub.score : ''}
+                                defaultValue={isGraded ? sub.grade?.score : ''}
                                 onChange={e => handleGradeChange(sub._id, 'score', e.target.value)}
                                 placeholder="0"
                                 className="w-full px-3 py-2 rounded-lg bg-[#101735] border border-[#1C2948] text-white text-sm focus:outline-none focus:border-[#00C8FF]"
@@ -317,7 +316,7 @@ export default function InstructorGradingPage() {
                               </label>
                               <textarea
                                 rows={2}
-                                defaultValue={isGraded ? sub.feedback : ''}
+                                defaultValue={isGraded ? sub.grade?.feedback : ''}
                                 onChange={e => handleGradeChange(sub._id, 'feedback', e.target.value)}
                                 placeholder="Written feedback for the student..."
                                 className="w-full px-3 py-2 rounded-lg bg-[#101735] border border-[#1C2948] text-white text-sm focus:outline-none focus:border-[#00C8FF] resize-none"
