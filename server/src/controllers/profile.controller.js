@@ -24,6 +24,7 @@ export function sanitizeUser(user) {
     active: src.active,
     program: src.program || '',
     year: src.year !== undefined && src.year !== null ? src.year : null,
+    department: src.department || '',
     skills: Array.isArray(src.skills) ? [...src.skills] : [],
     preferences: {
       theme: src.preferences?.theme || 'dark',
@@ -117,6 +118,11 @@ export const updateProfile = async (req, res, next) => {
       }
       // Preserves any other existing preference keys
       user.preferences.theme = req.body.preferences.theme;
+    }
+
+    // FR-03: allow instructors and coordinators to update their department
+    if (req.body.department !== undefined) {
+      user.department = req.body.department.trim();
     }
 
     // 3. Save with full Mongoose validation

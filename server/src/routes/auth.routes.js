@@ -1,12 +1,13 @@
 import express from 'express';
 import { register, login, getMe, logout } from '../controllers/auth.controller.js';
 import { authenticate, authorize } from '../middleware/auth.js';
+import { loginRateLimiter, registrationRateLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
 
-// Public Authentication Endpoints
-router.post('/register', register);
-router.post('/login', login);
+// Public Authentication Endpoints — SEC-05 rate limiting applied
+router.post('/register', registrationRateLimiter, register);
+router.post('/login', loginRateLimiter, login);
 router.post('/logout', logout);
 
 // Protected Authentication Endpoints

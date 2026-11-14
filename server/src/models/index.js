@@ -15,3 +15,4 @@ export { Project } from './Project.js';
 export { Task } from './Task.js';
 export { Message } from './Message.js';
 export { ActivityLog } from './ActivityLog.js';
+export { Setting } from './Setting.js';

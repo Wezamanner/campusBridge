@@ -100,6 +100,19 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    // Phase 12.5: Email verification support (future feature)
+    emailVerifiedAt: {
+      type: Date,
+      default: null,
+      index: true,
+    },
+    // Phase 12.5: Soft delete support per SRS business rule 10
+    deletedAt: {
+      type: Date,
+      default: null,
+      select: false, // Never exposed in standard queries
+      index: true,
+    },
   },
   {
     timestamps: true,

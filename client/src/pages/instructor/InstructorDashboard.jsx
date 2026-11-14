@@ -6,9 +6,11 @@ import StatCard from '../../components/ui/StatCard.jsx';
 import DashboardCard from '../../components/ui/DashboardCard.jsx';
 import DataTable from '../../components/ui/DataTable.jsx';
 import Badge from '../../components/ui/Badge.jsx';
+import Button from '../../components/ui/Button.jsx';
 import LoadingState from '../../components/ui/LoadingState.jsx';
 import { RiskFlagsRow } from '../../components/atRisk/RiskFlagBadge.jsx';
 import { fetchAtRiskSummary, fetchAtRiskStudents } from '../../services/atRisk.js';
+import { reportsService } from '../../services/phase11.js';
 import {
   BookOpen,
   CheckSquare,
@@ -18,6 +20,8 @@ import {
   FileCheck2,
   ShieldAlert,
   ArrowRight,
+  Download,
+  AlertCircle,
 } from 'lucide-react';
 import { api } from '../../services/api.js';
 
@@ -39,6 +43,10 @@ export default function InstructorDashboard() {
     loading: true,
     error: null,
   });
+  
+  // Reports state
+  const [downloadingReport, setDownloadingReport] = useState(false);
+  const [reportError, setReportError] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -134,6 +142,19 @@ export default function InstructorDashboard() {
     },
   ];
 
+  // Download progress report (scoped to instructor's courses)
+  const handleDownloadProgressReport = async () => {
+    try {
+      setDownloadingReport(true);
+      setReportError(null);
+      await reportsService.downloadProgressReport();
+    } catch (err) {
+      setReportError(err.message || 'Failed to download progress report.');
+    } finally {
+      setDownloadingReport(false);
+    }
+  };
+
   const totalAssigned = courses.length;
   // Calculate total enrolled from courses or fallback to atRisk summary
   const totalEnrolled =
@@ -204,6 +225,36 @@ export default function InstructorDashboard() {
             sparklineData={[1]}
           />
         </div>
+
+        {/* Progress Report Section */}
+        <DashboardCard
+          title="Student Progress Report"
+          subtitle="Export CSV report for your assigned courses"
+          icon={Download}
+        >
+          <div className="space-y-3">
+            {reportError && (
+              <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 text-sm flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <span>{reportError}</span>
+              </div>
+            )}
+            <div className="p-4 rounded-xl bg-[#1C2948]/40 border border-[#1C2948] flex items-center justify-between">
+              <div>
+                <h4 className="font-semibold text-white text-sm mb-1">My Courses Progress Report</h4>
+                <p className="text-xs text-gray-400">Export enrollment progress, submission counts, and scores for students in your assigned courses</p>
+              </div>
+              <Button
+                size="sm"
+                onClick={handleDownloadProgressReport}
+                disabled={downloadingReport}
+              >
+                <Download className="w-3.5 h-3.5 mr-1.5" />
+                {downloadingReport ? 'Downloading...' : 'Download CSV'}
+              </Button>
+            </div>
+          </div>
+        </DashboardCard>
 
         {/* At-Risk Students Preview (FR-16, UC-I03) */}
         <DashboardCard

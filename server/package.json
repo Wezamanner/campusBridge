@@ -17,6 +17,13 @@
     "test:assignments": "PORT=5005 node src/utils/testAssignmentManagement.js",
     "test:student-assignments": "PORT=5005 node src/utils/testStudentAssignments.js",
     "test:grading": "PORT=5005 node src/utils/testGradingFocused.js",
+    "test:phase12.5-models": "PORT=5005 node src/utils/testPhase12.5-models.js",
+    "test:phase12.5-services": "PORT=5005 node src/utils/testPhase12.5-services.js",
+    "test:phase12.5-controllers": "PORT=5005 node src/utils/testPhase12.5-controllers.js",
+    "test:phase12.5-routes": "PORT=5005 node src/utils/testPhase12.5-routes.js",
+    "test:phase13": "node src/tests/phase13.test.js",
+    "test:phase13-defects": "node src/tests/phase13.1-defects.test.js",
+    "test:phase14": "node src/tests/phase14-unified.test.js",
     "seed:users": "node src/utils/seedUsers.js"
   },
   "dependencies": {
@@ -24,10 +31,12 @@
     "cors": "^2.8.6",
     "dotenv": "^18.0.10",
     "express": "^5.3.0",
+    "express-rate-limit": "^7.5.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.12.0",
     "morgan": "^1.12.1",
-    "multer": "^2.5.0"
+    "multer": "^2.5.0",
+    "node-fetch": "^2.7.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"

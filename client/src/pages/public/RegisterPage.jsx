@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { 
@@ -10,7 +10,8 @@ import {
   Calendar, 
   ArrowRight, 
   AlertCircle, 
-  Loader2 
+  Loader2,
+  ShieldAlert
 } from 'lucide-react';
 
 export default function RegisterPage() {
@@ -24,9 +25,23 @@ export default function RegisterPage() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [registrationOpen, setRegistrationOpen] = useState(true);
+  const [checkingSettings, setCheckingSettings] = useState(true);
 
   const { register } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    fetch('/api/v1/settings')
+      .then(res => res.json())
+      .then(json => {
+        if (json.success && json.data) {
+          setRegistrationOpen(json.data.registrationOpen !== false);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setCheckingSettings(false));
+  }, []);
 
   const handleChange = (e) => {
     setFormData((prev) => ({
@@ -96,14 +111,35 @@ export default function RegisterPage() {
 
         {/* Form Container */}
         <div className="p-8 rounded-2xl bg-[#1C2948]/70 border border-[#00C8FF]/20 backdrop-blur-xl shadow-2xl space-y-6">
-          {errorMessage && (
-            <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-start space-x-3 text-rose-300 text-xs">
-              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-400" />
-              <span>{errorMessage}</span>
+          {!checkingSettings && !registrationOpen ? (
+            <div className="text-center py-6 space-y-4">
+              <div className="w-12 h-12 mx-auto rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center border border-rose-500/30">
+                <ShieldAlert className="w-6 h-6" />
+              </div>
+              <h2 className="text-lg font-bold text-white">Registration Currently Closed</h2>
+              <p className="text-xs text-gray-300 max-w-sm mx-auto">
+                Student self-registration is currently disabled by university administration (FR-24). Please contact your faculty coordinator or administrator for an account.
+              </p>
+              <div className="pt-2">
+                <Link
+                  to="/login"
+                  className="inline-flex items-center space-x-2 px-6 py-2.5 rounded-xl font-bold text-xs bg-gradient-to-r from-[#00C8FF] to-[#8CEBFF] text-[#101735] hover:opacity-95 shadow-glow-cyan transition-all"
+                >
+                  <span>Go to Sign In</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
             </div>
-          )}
+          ) : (
+            <>
+              {errorMessage && (
+                <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-start space-x-3 text-rose-300 text-xs">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-400" />
+                  <span>{errorMessage}</span>
+                </div>
+              )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4">
             {/* Full Name */}
             <div className="space-y-1.5">
               <label className="block text-xs font-semibold text-[#8CEBFF] uppercase tracking-wider">
@@ -244,6 +280,8 @@ export default function RegisterPage() {
               </button>
             </div>
           </form>
+          </>
+          )}
 
           {/* Navigation link to Login */}
           <div className="text-center pt-2 border-t border-[#1C2948]">

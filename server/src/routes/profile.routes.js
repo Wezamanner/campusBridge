@@ -10,31 +10,34 @@ import {
 
 const router = express.Router();
 
-// Enforce authentication and student role on all profile operations
-router.use(authenticate, authorize('student'));
+// All authenticated users can view and update their own profile (FR-03 / UC-G02)
+// CV upload/download is student-only (FR-23)
+router.use(authenticate);
 
 /**
  * @route   GET /api/v1/profile
- * @desc    Retrieve own student profile
+ * @desc    Retrieve own profile (all roles: FR-03)
  */
 router.get('/', getProfile);
 
 /**
  * @route   PUT /api/v1/profile
- * @desc    Update editable student profile fields
+ * @desc    Update own profile fields (all roles: FR-03)
+ *          Students: name, program, year, skills, preferences
+ *          Instructors/Coordinators: name, department, preferences
  */
 router.put('/', updateProfile);
 
 /**
  * @route   POST /api/v1/profile/cv
- * @desc    Upload or replace CV document (multipart/form-data, field: 'cv')
+ * @desc    Upload or replace CV document (students only, FR-23)
  */
-router.post('/cv', handleCvUpload, uploadCv);
+router.post('/cv', authorize('student'), handleCvUpload, uploadCv);
 
 /**
  * @route   GET /api/v1/profile/cv
- * @desc    Secure authenticated download of own CV document
+ * @desc    Secure authenticated download of own CV (students only, FR-23)
  */
-router.get('/cv', downloadCv);
+router.get('/cv', authorize('student'), downloadCv);
 
 export default router;

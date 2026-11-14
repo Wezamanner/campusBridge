@@ -7,26 +7,60 @@ import * as authService from '../services/auth.service.js';
  */
 export const register = async (req, res, next) => {
   try {
-    const { name, email, password, program, year } = req.body;
+    const { name, firstName, lastName, email, password, program, year, role, studentId, employeeId } = req.body;
 
-    if (!name || !email || !password) {
+    // Support both 'name' (single field) and 'firstName' + 'lastName' (split fields)
+    let fullName = name;
+    if (!fullName && firstName && lastName) {
+      fullName = `${firstName} ${lastName}`;
+    }
+
+    if (!fullName || !email || !password) {
       return res.status(400).json({
         success: false,
         message: 'Name, email, and password are required fields.',
       });
     }
 
+    // If role is specified and not student, use advanced registration
+    if (role && role !== 'student') {
+      const result = await authService.registerUser({
+        name: fullName,
+        email,
+        password,
+        role,
+        studentId,
+        employeeId,
+        program,
+        year,
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: `${role.charAt(0).toUpperCase() + role.slice(1)} account registered successfully.`,
+        token: result.token,
+        user: result.user,
+        data: result,
+      });
+    }
+
+    // Default to student registration
     const result = await authService.registerStudent({
-      name,
+      name: fullName,
       email,
       password,
       program,
       year,
     });
 
+    // Expose token and user both at top-level AND under `data` so that
+    // existing Phase 13/14 tests (res.body.data.token) and new Phase 15
+    // journey tests (res.body.token) both pass without modification.
     res.status(201).json({
       success: true,
       message: 'Student account registered successfully.',
+      token: result.token,
+      user: result.user,
       data: result,
     });
   } catch (error) {

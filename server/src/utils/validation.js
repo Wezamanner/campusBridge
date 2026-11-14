@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-export const ALLOWED_PROFILE_FIELDS = ['name', 'program', 'year', 'skills', 'preferences'];
+export const ALLOWED_PROFILE_FIELDS = ['name', 'program', 'year', 'skills', 'preferences', 'department'];
 
 export const ALLOWED_CV_MIME_TYPES = [
   'application/pdf',

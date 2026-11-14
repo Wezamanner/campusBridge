@@ -38,12 +38,14 @@ import {
   Sparkles,
   Server,
   Database,
-  LogIn
+  LogIn,
+  Megaphone
 } from 'lucide-react';
 
 function LandingPage() {
   const { isDark, toggleTheme } = useTheme();
   const [health, setHealth] = useState({ loading: true, data: null, error: null });
+  const [publicData, setPublicData] = useState({ registrationOpen: true, publicContent: {}, announcements: [] });
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -55,6 +57,15 @@ function LandingPage() {
       })
       .then((json) => setHealth({ loading: false, data: json, error: null }))
       .catch((err) => setHealth({ loading: false, data: null, error: err.message }));
+
+    fetch('/api/v1/public/content')
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && json.data) {
+          setPublicData(json.data);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const getDashboardPath = () => {
@@ -128,16 +139,26 @@ function LandingPage() {
               >
                 Sign In
               </Link>
-              <Link
-                to="/register"
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-[#00C8FF] to-[#8CEBFF] text-[#101735] hover:opacity-95 shadow-glow-cyan-sm transition-all"
-              >
-                Get Started
-              </Link>
+              {publicData.registrationOpen !== false && (
+                <Link
+                  to="/register"
+                  className="px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-[#00C8FF] to-[#8CEBFF] text-[#101735] hover:opacity-95 shadow-glow-cyan-sm transition-all"
+                >
+                  Get Started
+                </Link>
+              )}
             </div>
           )}
         </div>
       </header>
+
+      {/* Public Announcement Banner (FR-24, FR-46, UC-G01) */}
+      {publicData.announcements && publicData.announcements.length > 0 && (
+        <div className="bg-gradient-to-r from-[#00C8FF]/20 via-[#A855F7]/20 to-[#00C8FF]/20 border-b border-[#00C8FF]/30 px-6 py-2.5 text-center text-xs font-medium text-[#8CEBFF] flex items-center justify-center gap-2">
+          <Megaphone className="w-4 h-4 text-[#00C8FF] flex-shrink-0" />
+          <span>{publicData.announcements[0].message}</span>
+        </div>
+      )}
 
       {/* Hero Section */}
       <main className="max-w-6xl mx-auto px-6 py-16 space-y-12">
@@ -146,18 +167,18 @@ function LandingPage() {
             Turning Ideas into Powerful Solutions
           </div>
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight max-w-3xl mx-auto leading-tight">
-            Connecting University Learning with Real-World Industry
+            {publicData.publicContent?.heroTitle || 'Connecting University Learning with Real-World Industry'}
           </h1>
           <p className="max-w-2xl mx-auto text-sm md:text-base opacity-75 leading-relaxed">
-            CampusBridge unifies academic coursework, student projects, assignment grading, and verified corporate internship placements within a secure role-based ecosystem.
+            {publicData.publicContent?.heroSubtitle || 'CampusBridge unifies academic coursework, student projects, assignment grading, and verified corporate internship placements within a secure role-based ecosystem.'}
           </p>
 
           <div className="flex items-center justify-center space-x-4 pt-4">
             <Link
-              to={isAuthenticated ? getDashboardPath() : '/register'}
+              to={isAuthenticated ? getDashboardPath() : (publicData.registrationOpen !== false ? '/register' : '/login')}
               className="px-6 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-[#00C8FF] to-[#8CEBFF] text-[#101735] hover:opacity-95 shadow-glow-cyan transition-all flex items-center space-x-2"
             >
-              <span>{isAuthenticated ? 'Open Your Dashboard' : 'Explore Platform'}</span>
+              <span>{isAuthenticated ? 'Open Your Dashboard' : (publicData.registrationOpen !== false ? 'Explore Platform' : 'Sign In to Platform')}</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
             {!isAuthenticated && (

@@ -33,12 +33,21 @@ export const authenticate = async (req, res, next) => {
       });
     }
 
-    const user = await User.findById(decoded.id);
+    // Phase 12.5: Fetch user with explicit deletedAt check (soft-delete policy enforcement)
+    const user = await User.findById(decoded.id).select('+deletedAt');
 
     if (!user) {
       return res.status(401).json({
         success: false,
         message: 'User account associated with this token no longer exists.',
+      });
+    }
+
+    // Phase 12.5: Soft-delete policy - deleted users cannot authenticate
+    if (user.deletedAt) {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account has been deleted. Please contact an administrator if you believe this is an error.',
       });
     }
 

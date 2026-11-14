@@ -11,6 +11,38 @@ const applicationCvSchema = new mongoose.Schema(
   { _id: false }
 );
 
+// Phase 12.5: Interview scheduling subdocument
+const interviewScheduleSchema = new mongoose.Schema(
+  {
+    date: {
+      type: Date,
+    },
+    time: {
+      type: String, // e.g., "10:00 AM UTC"
+      trim: true,
+    },
+    meetingLink: {
+      type: String,
+      trim: true,
+      match: [/^https?:\/\/.+/, 'Meeting link must be a valid URL'],
+    },
+    instructionsForCandidate: {
+      type: String,
+      trim: true,
+      maxlength: [1000, 'Instructions cannot exceed 1000 characters'],
+    },
+    scheduledBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User', // Coordinator who scheduled
+    },
+    scheduledAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  { _id: false }
+);
+
 const statusHistorySchema = new mongoose.Schema(
   {
     status: {
@@ -74,6 +106,19 @@ const applicationSchema = new mongoose.Schema(
     appliedAt: {
       type: Date,
       default: Date.now,
+    },
+    // Phase 12.5: Interview scheduling (coordinator workflow)
+    interviewSchedule: {
+      type: interviewScheduleSchema,
+      default: null,
+    },
+    // Phase 12.5: Coordinator reviewer notes (PRIVATE - SEC-13)
+    reviewerNotes: {
+      type: String,
+      trim: true,
+      maxlength: [2000, 'Reviewer notes cannot exceed 2000 characters'],
+      default: '',
+      select: false, // Never exposed in student API responses
     },
   },
   {

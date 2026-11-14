@@ -45,6 +45,22 @@ const partnerOrganizationSchema = new mongoose.Schema(
       required: [true, 'Creator (coordinator) reference is required'],
       index: true,
     },
+    // Phase 12.5: Coordinator approval workflow (UC-C02, FR-13)
+    approved: {
+      type: Boolean,
+      default: false,
+      index: true, // For filtering pending organizations
+    },
+    approvedAt: {
+      type: Date,
+      default: null,
+    },
+    approvedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User', // Coordinator who approved
+      default: null,
+      index: true,
+    },
   },
   {
     timestamps: true,

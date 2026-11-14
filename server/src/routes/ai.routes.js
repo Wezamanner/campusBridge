@@ -5,6 +5,7 @@
 
 import express from 'express';
 import { authenticate, authorize } from '../middleware/auth.js';
+import { aiRateLimiter } from '../middleware/rateLimiter.js';
 import {
   generateStudyPlan,
   askQuestion,
@@ -15,6 +16,7 @@ const router = express.Router();
 
 router.use(authenticate);
 router.use(authorize('student'));
+router.use(aiRateLimiter); // SEC-05: rate limit AI endpoints
 
 router.post('/study-plan', generateStudyPlan);
 router.post('/ask', askQuestion);

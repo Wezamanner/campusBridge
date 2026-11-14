@@ -27,6 +27,17 @@ import messagesRoutes from './routes/messages.routes.js';
 import activityRoutes from './routes/activity.routes.js';
 import searchRoutes from './routes/search.routes.js';
 
+// Phase 12.5 routes (Coordinator/Administrator Functionality)
+import adminRoutes from './routes/admin.routes.js';
+import coordinatorRoutes from './routes/coordinator.routes.js';
+import reportsRoutes from './routes/reports.routes.js';
+
+// Phase 14 routes (Settings, Public Content, Announcements)
+import settingsRoutes from './routes/settings.routes.js';
+import publicRoutes from './routes/public.routes.js';
+import announcementsRoutes from './routes/announcements.routes.js';
+import helpRoutes from './routes/help.routes.js';
+
 import { notFound, errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
@@ -76,6 +87,17 @@ app.use('/api/v1/messages', messagesRoutes);
 app.use('/api/v1/activity', activityRoutes);
 app.use('/api/v1/search', searchRoutes);
 
+// API Routes — Phase 12.5 (Coordinator/Administrator Functionality)
+app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/coordinator', coordinatorRoutes);
+app.use('/api/v1/reports', reportsRoutes);
+
+// API Routes — Phase 14 (Settings, Public Content, Announcements, Help)
+app.use('/api/v1/settings', settingsRoutes);
+app.use('/api/v1/public', publicRoutes);
+app.use('/api/v1/announcements', announcementsRoutes);
+app.use('/api/v1/help', helpRoutes);
+
 // Error Handling Middlewares
 app.use(notFound);
 app.use(errorHandler);
@@ -83,13 +105,18 @@ app.use(errorHandler);
 const PORT = config.port;
 
 // Connect Database and Start Server
-const startServer = async () => {
+export const startServer = async () => {
   await connectDB();
   app.listen(PORT, () => {
     console.log(`[CampusBridge Server] Running in ${config.nodeEnv} mode on http://localhost:${PORT}`);
   });
 };
 
-startServer();
+// Only start server when executed directly or when invoked by test suites with designated PORT
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+if (process.argv[1] === __filename || process.env.PORT === '5005') {
+  startServer();
+}
 
 export default app;
