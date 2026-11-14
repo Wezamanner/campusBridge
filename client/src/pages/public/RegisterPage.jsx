@@ -32,7 +32,9 @@ export default function RegisterPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch('/api/v1/settings')
+    const rawBase = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+    const API = rawBase.endsWith('/api/v1') ? rawBase.slice(0, -'/api/v1'.length) : rawBase;
+    fetch(`${API}/api/v1/settings`)
       .then(res => res.json())
       .then(json => {
         if (json.success && json.data) {

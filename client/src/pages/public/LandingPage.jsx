@@ -76,26 +76,32 @@ export default function LandingPage() {
   const [announcements, setAnnouncements] = useState({ loading: true, data: [], error: null });
 
   useEffect(() => {
+    // Derive the scheme+host only from VITE_API_BASE_URL so we can prepend /api/v1 ourselves.
+    // VITE_API_BASE_URL is expected to be "https://host.onrender.com/api/v1".
+    // Strip the /api/v1 suffix so paths like /api/v1/settings don't double up.
+    const rawBase = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+    const API = rawBase.endsWith('/api/v1') ? rawBase.slice(0, -'/api/v1'.length) : rawBase;
+
     // settings
-    fetch('/api/v1/settings')
+    fetch(`${API}/api/v1/settings`)
       .then(r => r.json())
       .then(j => { if (j.success && j.data) setRegistrationOpen(j.data.registrationOpen !== false); })
       .catch(() => {});
 
     // public content blocks
-    fetch('/api/v1/public/content')
+    fetch(`${API}/api/v1/public/content`)
       .then(r => r.json())
       .then(j => { if (j.success && j.data?.publicContent) setPublicContent(j.data.publicContent); })
       .catch(() => {});
 
     // real internship listings
-    fetch('/api/v1/public/internships')
+    fetch(`${API}/api/v1/public/internships`)
       .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
       .then(j => setInternships({ loading: false, data: j.internships ?? [], error: null }))
       .catch(e => setInternships({ loading: false, data: [], error: e.message }));
 
     // real announcements
-    fetch('/api/v1/public/announcements')
+    fetch(`${API}/api/v1/public/announcements`)
       .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
       .then(j => setAnnouncements({ loading: false, data: j.announcements ?? [], error: null }))
       .catch(e => setAnnouncements({ loading: false, data: [], error: e.message }));

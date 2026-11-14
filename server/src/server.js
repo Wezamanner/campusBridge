@@ -43,8 +43,20 @@ import { notFound, errorHandler } from './middleware/errorHandler.js';
 const app = express();
 
 // Middlewares
+const allowedOrigins = [
+  config.clientUrl,                          // set CLIENT_URL=https://campus-bridge-lyart.vercel.app on Render
+  'https://campus-bridge-lyart.vercel.app',  // explicit fallback for the production frontend
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+].filter(Boolean);                           // drop any undefined/empty entries
+
 app.use(cors({
-  origin: [config.clientUrl, 'http://localhost:5173', 'http://127.0.0.1:5173'],
+  origin: (incomingOrigin, callback) => {
+    // Allow requests with no Origin header (server-to-server, curl, Postman)
+    if (!incomingOrigin) return callback(null, true);
+    if (allowedOrigins.includes(incomingOrigin)) return callback(null, true);
+    callback(new Error(`CORS: origin '${incomingOrigin}' is not allowed`));
+  },
   credentials: true,
 }));
 app.use(express.json());
