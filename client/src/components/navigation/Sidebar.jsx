@@ -35,9 +35,11 @@ export default function Sidebar({ isOpen = false, onClose }) {
         {/* Brand Header */}
         <div className="p-6 border-b border-[#1C2948] dark:border-[#1C2948] light:border-gray-100 flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-3 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#00C8FF] to-[#8CEBFF] flex items-center justify-center shadow-glow-cyan-sm group-hover:scale-105 transition-transform">
-              <GraduationCap className="w-6 h-6 text-[#101735]" />
-            </div>
+            <img
+              src="/brolf-tech-logo.jpg"
+              alt="Brolf Tech"
+              className="w-10 h-10 rounded-xl object-cover shadow-glow-cyan-sm group-hover:scale-105 transition-transform"
+            />
             <div>
               <span className="text-lg font-bold tracking-tight bg-gradient-to-r from-white via-[#8CEBFF] to-[#00C8FF] bg-clip-text text-transparent">
                 CampusBridge

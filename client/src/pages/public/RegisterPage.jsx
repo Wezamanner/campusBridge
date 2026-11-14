@@ -96,9 +96,11 @@ export default function RegisterPage() {
         {/* Brand Header */}
         <div className="text-center space-y-3">
           <Link to="/" className="inline-flex items-center space-x-3 group">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#00C8FF] to-[#8CEBFF] flex items-center justify-center shadow-glow-cyan">
-              <GraduationCap className="w-7 h-7 text-[#101735]" />
-            </div>
+            <img
+              src="/brolf-tech-logo.jpg"
+              alt="Brolf Tech"
+              className="w-12 h-12 rounded-2xl object-cover shadow-glow-cyan group-hover:scale-105 transition-transform"
+            />
             <span className="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-white via-[#8CEBFF] to-[#00C8FF] bg-clip-text text-transparent">
               CampusBridge
             </span>
