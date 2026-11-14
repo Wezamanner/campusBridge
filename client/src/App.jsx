@@ -8,6 +8,7 @@ import LandingPage from './pages/public/LandingPage.jsx';
 import LoginPage from './pages/public/LoginPage.jsx';
 import RegisterPage from './pages/public/RegisterPage.jsx';
 
+// Student pages
 import StudentDashboard from './pages/student/StudentDashboard.jsx';
 import StudentProfilePage from './pages/student/StudentProfilePage.jsx';
 import StudentCoursesPage from './pages/student/StudentCoursesPage.jsx';
@@ -22,13 +23,23 @@ import StudentAchievementsPage from './pages/student/StudentAchievementsPage.jsx
 import StudentMessagesPage from './pages/student/StudentMessagesPage.jsx';
 import StudentNotificationsPage from './pages/student/StudentNotificationsPage.jsx';
 
+// Instructor pages
 import InstructorDashboard from './pages/instructor/InstructorDashboard.jsx';
+import InstructorGradingPage from './pages/instructor/InstructorGradingPage.jsx';
 import AtRiskMonitoringPage from './pages/instructor/AtRiskMonitoringPage.jsx';
 import InstructorCoursesPage from './pages/instructor/InstructorCoursesPage.jsx';
 import InstructorCourseDetailsPage from './pages/instructor/InstructorCourseDetailsPage.jsx';
 
+// Coordinator pages
 import CoordinatorDashboard from './pages/coordinator/CoordinatorDashboard.jsx';
+import CoordinatorCoursesPage from './pages/coordinator/CoordinatorCoursesPage.jsx';
+
+// Admin pages
 import AdminDashboard from './pages/admin/AdminDashboard.jsx';
+
+// Shared pages (messages + notifications used by instructor, coordinator, admin)
+import MessagesPage from './pages/shared/MessagesPage.jsx';
+import NotificationsPage from './pages/shared/NotificationsPage.jsx';
 
 export default function App() {
   return (
@@ -36,12 +47,12 @@ export default function App() {
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-            {/* Public */}
-            <Route path="/"        element={<LandingPage />} />
-            <Route path="/login"   element={<LoginPage />} />
+            {/* ── Public ──────────────────────────────────────────────── */}
+            <Route path="/"         element={<LandingPage />} />
+            <Route path="/login"    element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
 
-            {/* Student */}
+            {/* ── Student ─────────────────────────────────────────────── */}
             <Route path="/student/dashboard"       element={<ProtectedRoute allowedRoles={['student']}><StudentDashboard /></ProtectedRoute>} />
             <Route path="/student/profile"         element={<ProtectedRoute allowedRoles={['student']}><StudentProfilePage /></ProtectedRoute>} />
             <Route path="/student/courses"         element={<ProtectedRoute allowedRoles={['student']}><StudentCoursesPage /></ProtectedRoute>} />
@@ -57,20 +68,38 @@ export default function App() {
             <Route path="/student/messages"        element={<ProtectedRoute allowedRoles={['student']}><StudentMessagesPage /></ProtectedRoute>} />
             <Route path="/student/notifications"   element={<ProtectedRoute allowedRoles={['student']}><StudentNotificationsPage /></ProtectedRoute>} />
 
-            {/* Instructor */}
-            <Route path="/instructor/dashboard"  element={<ProtectedRoute allowedRoles={['instructor']}><InstructorDashboard /></ProtectedRoute>} />
-            <Route path="/instructor/courses"    element={<ProtectedRoute allowedRoles={['instructor','coordinator','admin']}><InstructorCoursesPage /></ProtectedRoute>} />
+            {/* ── Instructor ──────────────────────────────────────────── */}
+            <Route path="/instructor/dashboard"   element={<ProtectedRoute allowedRoles={['instructor']}><InstructorDashboard /></ProtectedRoute>} />
+            <Route path="/instructor/courses"     element={<ProtectedRoute allowedRoles={['instructor','coordinator','admin']}><InstructorCoursesPage /></ProtectedRoute>} />
             <Route path="/instructor/courses/:id" element={<ProtectedRoute allowedRoles={['instructor','coordinator','admin']}><InstructorCourseDetailsPage /></ProtectedRoute>} />
-            <Route path="/instructor/students"   element={<ProtectedRoute allowedRoles={['instructor']}><AtRiskMonitoringPage /></ProtectedRoute>} />
-            <Route path="/instructor/at-risk"    element={<ProtectedRoute allowedRoles={['instructor']}><AtRiskMonitoringPage /></ProtectedRoute>} />
+            <Route path="/instructor/students"    element={<ProtectedRoute allowedRoles={['instructor']}><AtRiskMonitoringPage /></ProtectedRoute>} />
+            <Route path="/instructor/at-risk"     element={<ProtectedRoute allowedRoles={['instructor']}><AtRiskMonitoringPage /></ProtectedRoute>} />
+            <Route path="/instructor/grading"     element={<ProtectedRoute allowedRoles={['instructor']}><InstructorGradingPage /></ProtectedRoute>} />
+            <Route path="/instructor/messages"    element={<ProtectedRoute allowedRoles={['instructor']}><MessagesPage /></ProtectedRoute>} />
+            <Route path="/instructor/notifications" element={<ProtectedRoute allowedRoles={['instructor']}><NotificationsPage /></ProtectedRoute>} />
 
-            {/* Coordinator */}
-            <Route path="/coordinator/dashboard" element={<ProtectedRoute allowedRoles={['coordinator']}><CoordinatorDashboard /></ProtectedRoute>} />
+            {/* ── Coordinator ─────────────────────────────────────────── */}
+            <Route path="/coordinator/dashboard"      element={<ProtectedRoute allowedRoles={['coordinator']}><CoordinatorDashboard /></ProtectedRoute>} />
+            <Route path="/coordinator/courses"        element={<ProtectedRoute allowedRoles={['coordinator']}><CoordinatorCoursesPage /></ProtectedRoute>} />
+            {/* Companies, Internships, Applications, Reports all fully live inside CoordinatorDashboard */}
+            <Route path="/coordinator/companies"      element={<ProtectedRoute allowedRoles={['coordinator']}><CoordinatorDashboard /></ProtectedRoute>} />
+            <Route path="/coordinator/internships"    element={<ProtectedRoute allowedRoles={['coordinator']}><CoordinatorDashboard /></ProtectedRoute>} />
+            <Route path="/coordinator/applications"   element={<ProtectedRoute allowedRoles={['coordinator']}><CoordinatorDashboard /></ProtectedRoute>} />
+            <Route path="/coordinator/reports"        element={<ProtectedRoute allowedRoles={['coordinator']}><CoordinatorDashboard /></ProtectedRoute>} />
+            <Route path="/coordinator/messages"       element={<ProtectedRoute allowedRoles={['coordinator']}><MessagesPage /></ProtectedRoute>} />
+            <Route path="/coordinator/notifications"  element={<ProtectedRoute allowedRoles={['coordinator']}><NotificationsPage /></ProtectedRoute>} />
 
-            {/* Admin */}
-            <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
+            {/* ── Admin ───────────────────────────────────────────────── */}
+            <Route path="/admin/dashboard"      element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
+            {/* Users, Settings, Announcements, Content, Reports all fully live inside AdminDashboard */}
+            <Route path="/admin/users"          element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/admin/settings"       element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/admin/announcements"  element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/admin/content"        element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/admin/reports"        element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/admin/notifications"  element={<ProtectedRoute allowedRoles={['admin']}><NotificationsPage /></ProtectedRoute>} />
 
-            {/* Fallback */}
+            {/* ── Fallback ────────────────────────────────────────────── */}
             <Route path="*" element={<LandingPage />} />
           </Routes>
         </AuthProvider>
