@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { Code2, Trophy, Star, Sparkles } from 'lucide-react';
+import { Code2, Trophy, Star } from 'lucide-react';
 
 export default function WelcomeBanner({ quote, tags, className = '' }) {
   const { user } = useAuth();
@@ -55,12 +55,16 @@ export default function WelcomeBanner({ quote, tags, className = '' }) {
           </div>
         </div>
 
-        {/* Right Graphic: Illuminated Ring Mascot Emblem */}
+        {/* Right: Logo */}
         <div className="hidden md:flex items-center justify-center relative w-44 h-44 flex-shrink-0">
           <div className="absolute inset-0 rounded-full border-2 border-[#00C8FF]/30 animate-spin-slow" />
           <div className="absolute inset-2 rounded-full border border-[#8CEBFF]/20" />
-          <div className="w-28 h-28 rounded-full bg-gradient-to-tr from-[#00C8FF]/20 to-[#8CEBFF]/10 border border-[#00C8FF]/40 flex items-center justify-center shadow-glow-cyan">
-            <Sparkles className="w-12 h-12 text-[#00C8FF]" />
+          <div className="w-28 h-28 rounded-full overflow-hidden border-2 border-[#00C8FF]/40 shadow-glow-cyan flex items-center justify-center">
+            <img
+              src="/brolf-tech-logo.jpg"
+              alt="Brolf Tech"
+              className="w-full h-full object-cover"
+            />
           </div>
         </div>
       </div>
