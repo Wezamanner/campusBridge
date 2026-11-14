@@ -11,17 +11,27 @@ export default function EmptyState({
 }) {
   return (
     <div
-      className={`p-8 rounded-xl border border-dashed border-[#1C2948] bg-[#101735]/40 text-center flex flex-col items-center justify-center space-y-3 ${className}`}
+      className={`p-8 rounded-xl border-dashed text-center flex flex-col items-center justify-center space-y-3 ${className}`}
+      style={{
+        border: '1px dashed var(--cb-border)',
+        backgroundColor: 'var(--cb-bg)',
+        opacity: 0.9,
+      }}
     >
       <div className="w-12 h-12 rounded-xl bg-[#00C8FF]/10 text-[#00C8FF] flex items-center justify-center">
         <Icon className="w-6 h-6" />
       </div>
-
       <div className="space-y-1">
-        <h4 className="font-bold text-sm text-white tracking-tight">{title}</h4>
-        <p className="text-xs text-gray-400 max-w-sm">{description}</p>
+        <h4
+          className="font-bold text-sm tracking-tight"
+          style={{ color: 'var(--cb-text)' }}
+        >
+          {title}
+        </h4>
+        <p className="text-xs max-w-sm" style={{ color: 'var(--cb-text-muted)' }}>
+          {description}
+        </p>
       </div>
-
       {actionText && onActionClick && (
         <button
           onClick={onActionClick}

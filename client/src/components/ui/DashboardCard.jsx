@@ -17,27 +17,34 @@ export default function DashboardCard({
 }) {
   return (
     <div
-      className={`rounded-2xl border transition-all duration-300 flex flex-col 
-      bg-[#1C2948]/60 dark:bg-[#1C2948]/60 border-[#1C2948] shadow-lg
-      light:bg-white light:border-gray-200 light:shadow-sm ${className}`}
+      className={`rounded-2xl transition-all duration-300 flex flex-col shadow-lg ${className}`}
+      style={{
+        backgroundColor: 'var(--cb-surface)',
+        border: '1px solid var(--cb-border)',
+      }}
     >
       {/* Card Header */}
       {(title || actionText || actionComponent) && (
         <div
-          className={`px-6 py-4 border-b border-[#1C2948] dark:border-[#1C2948] light:border-gray-100 flex items-center justify-between ${headerClassName}`}
+          className={`px-6 py-4 flex items-center justify-between ${headerClassName}`}
+          style={{ borderBottom: '1px solid var(--cb-border)' }}
         >
           <div className="flex items-center space-x-2.5">
             {Icon && <Icon className="w-5 h-5 text-[#00C8FF]" />}
             <div>
-              <h3 className="font-bold text-sm md:text-base text-white dark:text-white light:text-gray-900 tracking-tight">
+              <h3
+                className="font-bold text-sm md:text-base tracking-tight"
+                style={{ color: 'var(--cb-text)' }}
+              >
                 {title}
               </h3>
               {subtitle && (
-                <p className="text-xs text-gray-400 mt-0.5">{subtitle}</p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--cb-text-muted)' }}>
+                  {subtitle}
+                </p>
               )}
             </div>
           </div>
-
           <div>
             {actionComponent ? (
               actionComponent
@@ -61,7 +68,6 @@ export default function DashboardCard({
           </div>
         </div>
       )}
-
       {/* Card Body */}
       <div className={`p-6 flex-1 ${bodyClassName}`}>{children}</div>
     </div>

@@ -8,15 +8,18 @@ import UserProfileMenu from './UserProfileMenu.jsx';
 export default function Topbar({ onToggleMobileSidebar, className = '' }) {
   return (
     <header
-      className={`h-16 px-4 md:px-8 border-b border-[#1C2948] dark:border-[#1C2948] light:border-gray-200 
-      bg-[#101735]/80 dark:bg-[#101735]/80 backdrop-blur-md sticky top-0 z-30 flex items-center justify-between
-      light:bg-white/80 ${className}`}
+      className={`h-16 px-4 md:px-8 sticky top-0 z-30 flex items-center justify-between backdrop-blur-md transition-colors duration-300 ${className}`}
+      style={{
+        backgroundColor: 'var(--cb-surface-2)',
+        borderBottom: '1px solid var(--cb-border)',
+      }}
     >
       <div className="flex items-center space-x-3 flex-1 max-w-xl">
         {/* Mobile Sidebar Toggle Button */}
         <button
           onClick={onToggleMobileSidebar}
-          className="lg:hidden p-2 rounded-xl text-gray-400 hover:text-white hover:bg-[#1C2948]/60"
+          className="lg:hidden p-2 rounded-xl transition-colors"
+          style={{ color: 'var(--cb-text-muted)' }}
           aria-label="Open navigation menu"
         >
           <Menu className="w-5 h-5" />

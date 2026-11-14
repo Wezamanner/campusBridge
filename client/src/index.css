@@ -2,30 +2,129 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Design-system colour tokens ──────────────────────────────────────────── */
 :root {
-  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont,
+    'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   color-scheme: dark;
+
+  /* Dark palette (defaults) */
+  --cb-bg:          #101735;
+  --cb-surface:     #1C2948;
+  --cb-surface-2:   rgba(28,41,72,0.60);
+  --cb-border:      #1C2948;
+  --cb-text:        #F5F8FC;
+  --cb-text-muted:  rgba(245,248,252,0.55);
+  --cb-text-faint:  rgba(245,248,252,0.35);
+  --cb-input-bg:    #101735;
 }
 
+/* Light palette overrides ──────────────────────────────────────────────────── */
 :root.light {
   color-scheme: light;
+
+  --cb-bg:          #F5F8FC;
+  --cb-surface:     #FFFFFF;
+  --cb-surface-2:   rgba(255,255,255,0.80);
+  --cb-border:      #E2E8F0;
+  --cb-text:        #101735;
+  --cb-text-muted:  rgba(16,23,53,0.60);
+  --cb-text-faint:  rgba(16,23,53,0.40);
+  --cb-input-bg:    #F8FAFC;
 }
+
+/* ── Token-based utility classes (used throughout the app) ──────────────── */
+@layer utilities {
+  .cb-bg        { background-color: var(--cb-bg); }
+  .cb-surface   { background-color: var(--cb-surface); }
+  .cb-surface-2 { background-color: var(--cb-surface-2); }
+  .cb-border    { border-color: var(--cb-border); }
+  .cb-text      { color: var(--cb-text); }
+  .cb-muted     { color: var(--cb-text-muted); }
+  .cb-faint     { color: var(--cb-text-faint); }
+  .cb-input     { background-color: var(--cb-input-bg); border-color: var(--cb-border); color: var(--cb-text); }
+}
+
+/* ── Global background and text ─────────────────────────────────────────── */
+body {
+  background-color: var(--cb-bg);
+  color: var(--cb-text);
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* ── Every hardcoded dark surface now responds to the theme ─────────────── */
+/* These selectors cover the in-JSX hardcoded Tailwind values. */
+
+.dark\:bg-\[\#101735\]\/80, .bg-\[\#101735\]\/80,
+.bg-\[\#101735\]\/60, .bg-\[\#101735\]\/40,
+.bg-\[\#101735\]\/70, .bg-\[\#101735\] {
+  transition: background-color 0.25s ease;
+}
+
+:root.light .bg-\[\#101735\] { background-color: var(--cb-surface) !important; }
+:root.light .bg-\[\#101735\]\/80 { background-color: rgba(255,255,255,0.80) !important; }
+:root.light .bg-\[\#101735\]\/70 { background-color: rgba(255,255,255,0.70) !important; }
+:root.light .bg-\[\#101735\]\/60 { background-color: rgba(255,255,255,0.60) !important; }
+:root.light .bg-\[\#101735\]\/40 { background-color: rgba(255,255,255,0.40) !important; }
+
+:root.light .bg-\[\#1C2948\]\/60 { background-color: rgba(241,245,249,0.80) !important; }
+:root.light .bg-\[\#1C2948\]\/50 { background-color: rgba(241,245,249,0.70) !important; }
+:root.light .bg-\[\#1C2948\]\/40 { background-color: rgba(241,245,249,0.60) !important; }
+:root.light .bg-\[\#1C2948\]\/30 { background-color: rgba(241,245,249,0.50) !important; }
+:root.light .bg-\[\#1C2948\]    { background-color: #E2E8F0 !important; }
+:root.light .bg-\[\#0D1424\]    { background-color: #FFFFFF !important; }
+
+/* Border overrides */
+:root.light .border-\[\#1C2948\] { border-color: #E2E8F0 !important; }
+:root.light .divide-\[\#1C2948\] > * + * { border-color: #E2E8F0 !important; }
+
+/* Text overrides – white text becomes dark */
+:root.light .text-white  { color: #101735 !important; }
+:root.light .text-\[\#F5F8FC\] { color: #101735 !important; }
+:root.light .text-gray-400 { color: #64748B !important; }
+:root.light .text-gray-500 { color: #94A3B8 !important; }
+:root.light .text-gray-300 { color: #475569 !important; }
+:root.light .text-gray-200 { color: #334155 !important; }
+
+/* Sticky topbar / sidebar background */
+:root.light .backdrop-blur-md {
+  background-color: rgba(245,248,252,0.90) !important;
+}
+
+/* Input fields */
+:root.light input[class*="bg-\[#101735\]"],
+:root.light input[class*="bg-\[#1C2948\]"],
+:root.light textarea[class*="bg-\[#101735\]"],
+:root.light textarea[class*="bg-\[#1C2948\]"],
+:root.light select[class*="bg-\[#101735\]"],
+:root.light select[class*="bg-\[#1C2948\]"] {
+  background-color: #F8FAFC !important;
+  border-color: #CBD5E1 !important;
+  color: #101735 !important;
+}
+
+:root.light input::placeholder,
+:root.light textarea::placeholder {
+  color: #94A3B8 !important;
+}
+
+/* Modals / overlays */
+:root.light .bg-black\/60 { background-color: rgba(0,0,0,0.40) !important; }
+:root.light .bg-black\/70 { background-color: rgba(0,0,0,0.50) !important; }
 
 /* Custom scrollbars */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
   background: rgba(0, 200, 255, 0.2);
   border-radius: 9999px;
 }
+::-webkit-scrollbar-thumb:hover { background: rgba(0, 200, 255, 0.4); }
 
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 200, 255, 0.4);
+/* Light mode scrollbar */
+:root.light ::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.3);
+}
+:root.light ::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.5);
 }

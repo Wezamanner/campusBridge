@@ -11,19 +11,26 @@ export default function DataTable({
   onRowClick,
   className = '',
 }) {
-  if (isLoading) {
-    return <LoadingState count={4} />;
-  }
-
+  if (isLoading) return <LoadingState count={4} />;
   if (!data || data.length === 0) {
     return <EmptyState title={emptyTitle} description={emptyMessage} />;
   }
 
   return (
-    <div className={`w-full overflow-x-auto rounded-xl border border-[#1C2948] ${className}`}>
+    <div
+      className={`w-full overflow-x-auto rounded-xl ${className}`}
+      style={{ border: '1px solid var(--cb-border)' }}
+    >
       <table className="w-full text-left text-sm border-collapse">
         <thead>
-          <tr className="border-b border-[#1C2948] bg-[#101735]/60 text-xs uppercase tracking-wider text-gray-400">
+          <tr
+            className="text-xs uppercase tracking-wider"
+            style={{
+              borderBottom: '1px solid var(--cb-border)',
+              backgroundColor: 'var(--cb-bg)',
+              color: 'var(--cb-text-muted)',
+            }}
+          >
             {columns.map((col, idx) => (
               <th
                 key={col.key || idx}
@@ -34,21 +41,21 @@ export default function DataTable({
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-[#1C2948]">
+        <tbody>
           {data.map((row, rowIdx) => (
             <tr
               key={row._id || rowIdx}
               onClick={() => onRowClick && onRowClick(row)}
-              className={`transition-colors hover:bg-[#1C2948]/40 ${
-                onRowClick ? 'cursor-pointer' : ''
-              }`}
+              className={`transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
+              style={{ borderTop: rowIdx > 0 ? '1px solid var(--cb-border)' : 'none' }}
+              onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--cb-surface)'; }}
+              onMouseLeave={e => { e.currentTarget.style.backgroundColor = ''; }}
             >
               {columns.map((col, colIdx) => (
                 <td
                   key={col.key || colIdx}
-                  className={`py-3 px-4 text-white dark:text-white light:text-gray-900 ${
-                    col.cellClassName || ''
-                  }`}
+                  className={`py-3 px-4 ${col.cellClassName || ''}`}
+                  style={{ color: 'var(--cb-text)' }}
                 >
                   {col.render
                     ? col.render(row[col.accessor], row)
