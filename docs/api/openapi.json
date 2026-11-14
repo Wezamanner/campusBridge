@@ -1,0 +1,1608 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "CampusBridge Student and Instructor API Specification",
+    "description": "Official REST API contract for the Student and Instructor modules of the CampusBridge university learning and internship platform. Strictly audited against CampusBridge SRS v2.0.\n",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5001/api/v1",
+      "description": "Local development API server"
+    }
+  ],
+  "paths": {
+    "/profile": {
+      "get": {
+        "summary": "Retrieve authenticated user profile",
+        "description": "Returns user profile, academic details, skills, CV metadata, and UI preferences (FR-03, FR-38).",
+        "tags": [
+          "Profile"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profile retrieved successfully"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update profile and UI preferences",
+        "description": "Updates name, program, year, skills, or theme preferences (FR-03, FR-23, FR-38, FR-39).",
+        "tags": [
+          "Profile"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  },
+                  "program": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "year": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 7
+                  },
+                  "department": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "skills": {
+                    "type": "array",
+                    "maxItems": 15,
+                    "items": {
+                      "type": "string",
+                      "minLength": 2,
+                      "maxLength": 30
+                    }
+                  },
+                  "preferences": {
+                    "type": "object",
+                    "properties": {
+                      "theme": {
+                        "type": "string",
+                        "enum": [
+                          "dark",
+                          "light"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profile updated successfully"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequestError"
+          }
+        }
+      }
+    },
+    "/profile/cv": {
+      "post": {
+        "summary": "Upload or replace student CV (Max 2 MB, PDF/Word)",
+        "description": "Attaches one CV file (PDF or Word, up to 2 MB) to student profile (FR-23, SEC-07).",
+        "tags": [
+          "Profile"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "cv"
+                ],
+                "properties": {
+                  "cv": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "CV uploaded and attached successfully"
+          },
+          "413": {
+            "description": "File size exceeds 2 MB"
+          },
+          "415": {
+            "description": "Unsupported file format (PDF and Word only)"
+          }
+        }
+      }
+    },
+    "/courses": {
+      "get": {
+        "summary": "List courses",
+        "description": "Returns courses catalog for students or assigned courses for instructors (FR-04, FR-05).",
+        "tags": [
+          "Courses"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Courses retrieved"
+          }
+        }
+      }
+    },
+    "/courses/{id}": {
+      "get": {
+        "summary": "View course details",
+        "description": "Returns syllabus and metadata for specific course (FR-05).",
+        "tags": [
+          "Courses"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Course details retrieved"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFoundError"
+          }
+        }
+      }
+    },
+    "/courses/{id}/enroll": {
+      "post": {
+        "summary": "Enroll in course",
+        "description": "Enrolls student in active course (FR-05).",
+        "tags": [
+          "Courses"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Enrolled successfully"
+          },
+          "409": {
+            "description": "Student already enrolled in this course"
+          }
+        }
+      }
+    },
+    "/courses/{id}/resources": {
+      "get": {
+        "summary": "View course learning materials",
+        "description": "View resources for enrolled course (requires active enrollment or assigned instructor) (FR-05).",
+        "tags": [
+          "Courses"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resources retrieved"
+          },
+          "403": {
+            "description": "Forbidden - student not enrolled"
+          }
+        }
+      },
+      "post": {
+        "summary": "Upload learning resource (Assigned Instructor only)",
+        "description": "Adds document, slides, or resource link to course (FR-04).",
+        "tags": [
+          "Courses"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "url"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "maxLength": 150
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "pdf",
+                      "document",
+                      "slides",
+                      "link",
+                      "video",
+                      "other"
+                    ]
+                  },
+                  "url": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Resource added successfully"
+          }
+        }
+      }
+    },
+    "/courses/{id}/assignments": {
+      "post": {
+        "summary": "Create assignment (Assigned Instructor only)",
+        "description": "Creates assignment with instructions, deadline, maxScore and allowLate setting (FR-06).",
+        "tags": [
+          "Assignments"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "description",
+                  "deadline",
+                  "maxScore"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 200
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "deadline": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "maxScore": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 100,
+                    "default": 100
+                  },
+                  "allowLate": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Assignment created and students notified"
+          }
+        }
+      }
+    },
+    "/assignments": {
+      "get": {
+        "summary": "List assignments",
+        "description": "Returns assignments across enrolled or assigned courses (FR-06, FR-07).",
+        "tags": [
+          "Assignments"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "courseId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Assignments retrieved"
+          }
+        }
+      }
+    },
+    "/assignments/{id}": {
+      "get": {
+        "summary": "View assignment details",
+        "description": "Returns assignment instructions, deadline, and own submission/grading status (FR-06, FR-07).",
+        "tags": [
+          "Assignments"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Assignment details retrieved"
+          }
+        }
+      }
+    },
+    "/assignments/{id}/submissions": {
+      "post": {
+        "summary": "Submit assignment or replace submission (Max 5 MB)",
+        "description": "Student submits text and/or file before deadline; may replace until graded/due (FR-07, SEC-07).",
+        "tags": [
+          "Assignments"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string"
+                  },
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Submission created successfully"
+          },
+          "200": {
+            "description": "Earlier submission replaced"
+          },
+          "413": {
+            "description": "File size exceeds 5 MB limit"
+          },
+          "422": {
+            "description": "Deadline expired or already graded"
+          }
+        }
+      }
+    },
+    "/instructor/submissions": {
+      "get": {
+        "summary": "View submissions for assigned courses",
+        "description": "Retrieves submissions for grading review (FR-08).",
+        "tags": [
+          "Grading"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "courseId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Submitted",
+                "Graded"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Submissions queue retrieved"
+          }
+        }
+      }
+    },
+    "/submissions/{id}/grade": {
+      "patch": {
+        "summary": "Grade submission and provide feedback",
+        "description": "Instructor evaluates submission with score and written feedback; recalculates progress (FR-08, FR-09).",
+        "tags": [
+          "Grading"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "score"
+                ],
+                "properties": {
+                  "score": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "feedback": {
+                    "type": "string",
+                    "maxLength": 1000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Graded successfully and progress recalculated"
+          }
+        }
+      }
+    },
+    "/progress": {
+      "get": {
+        "summary": "View learning progress and at-risk indicators",
+        "description": "Returns calculated progress from submitted work (FR-09) and flags students at risk (UC-I03).",
+        "tags": [
+          "Progress & Achievements"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "courseId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "flagged",
+            "in": "query",
+            "description": "Flag at-risk students for low progress, missed deadlines, inactivity (UC-I03)",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Progress statistics retrieved"
+          }
+        }
+      }
+    },
+    "/achievements": {
+      "get": {
+        "summary": "View earned achievement badges",
+        "description": "Returns milestone achievement badges awarded to student (FR-17).",
+        "tags": [
+          "Progress & Achievements"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Achievements retrieved"
+          }
+        }
+      }
+    },
+    "/rankings": {
+      "get": {
+        "summary": "View cohort rankings",
+        "description": "Ranks students by average submission score with first names and initials only (FR-17).",
+        "tags": [
+          "Progress & Achievements"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Leaderboard ranking retrieved"
+          }
+        }
+      }
+    },
+    "/internships": {
+      "get": {
+        "summary": "Browse open internships",
+        "description": "Browse verified active internships (FR-10, FR-11).",
+        "tags": [
+          "Internships"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Remote",
+                "Hybrid",
+                "On-site"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Internships retrieved"
+          }
+        }
+      }
+    },
+    "/internships/{id}": {
+      "get": {
+        "summary": "View internship details",
+        "description": "Returns details, skills, and requirements for an internship (FR-10).",
+        "tags": [
+          "Internships"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Internship details retrieved"
+          }
+        }
+      }
+    },
+    "/internships/{id}/applications": {
+      "post": {
+        "summary": "Apply for internship with message and CV",
+        "description": "Student applies once while internship is open (FR-11).",
+        "tags": [
+          "Internships"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "message"
+                ],
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 2000
+                  },
+                  "useProfileCv": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Application submitted successfully"
+          },
+          "409": {
+            "description": "Already applied to this internship"
+          }
+        }
+      }
+    },
+    "/applications": {
+      "get": {
+        "summary": "Track own internship applications",
+        "description": "Returns student's applications with status workflow (FR-11, FR-12).",
+        "tags": [
+          "Internships"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Applications list retrieved"
+          }
+        }
+      }
+    },
+    "/applications/{id}/status": {
+      "patch": {
+        "summary": "Withdraw internship application",
+        "description": "Student withdraws active application before final decision (FR-11, FR-12).",
+        "tags": [
+          "Internships"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "status"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "Withdrawn"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Application withdrawn successfully"
+          }
+        }
+      }
+    },
+    "/ai/study-plan": {
+      "post": {
+        "summary": "AI study plan generator (Student only, read-only)",
+        "description": "Builds day-by-day study plan from courses, deadlines and available hours (FR-19, CON-05).",
+        "tags": [
+          "AI Assistant"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "availableHours": {
+                    "type": "number",
+                    "minimum": 0.5,
+                    "maximum": 16
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Study plan generated with guidance disclaimer"
+          }
+        }
+      }
+    },
+    "/ai/ask": {
+      "post": {
+        "summary": "AI course & platform Q&A (Student only, read-only)",
+        "description": "Answers student questions about courses, platform and internships (FR-20, CON-05).",
+        "tags": [
+          "AI Assistant"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "question"
+                ],
+                "properties": {
+                  "question": {
+                    "type": "string",
+                    "minLength": 3
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Answer returned with guidance disclaimer"
+          }
+        }
+      }
+    },
+    "/ai/internship-matches": {
+      "get": {
+        "summary": "AI internship skill matching (Student only, read-only)",
+        "description": "Ranks open internships by overlap with student skills (FR-21, CON-05).",
+        "tags": [
+          "AI Assistant"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ranked matches returned with guidance disclaimer"
+          }
+        }
+      }
+    },
+    "/projects": {
+      "get": {
+        "summary": "List personal projects (Student only per ASM-02)",
+        "description": "Returns personal projects with progress calculated from completed tasks (FR-27, FR-28).",
+        "tags": [
+          "Projects & Tasks"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Projects retrieved"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create personal project",
+        "description": "Creates personal project with name, status, and due date (FR-27).",
+        "tags": [
+          "Projects & Tasks"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 150
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "active",
+                      "completed",
+                      "on_hold"
+                    ]
+                  },
+                  "dueDate": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Project created"
+          }
+        }
+      }
+    },
+    "/projects/{id}": {
+      "put": {
+        "summary": "Update project fields",
+        "description": "Updates personal project details (FR-29).",
+        "tags": [
+          "Projects & Tasks"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "active",
+                      "completed",
+                      "on_hold"
+                    ]
+                  },
+                  "dueDate": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Project updated"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Archive or delete personal project",
+        "description": "Archives or deletes student's personal project (FR-29).",
+        "tags": [
+          "Projects & Tasks"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Project removed or archived"
+          }
+        }
+      }
+    },
+    "/tasks": {
+      "get": {
+        "summary": "List personal tasks",
+        "description": "List tasks filtered by status (todo, done), priority (low, medium, high), or project (FR-30, FR-31).",
+        "tags": [
+          "Projects & Tasks"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "todo",
+                "done"
+              ]
+            }
+          },
+          {
+            "name": "priority",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "low",
+                "medium",
+                "high"
+              ]
+            }
+          },
+          {
+            "name": "projectId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tasks retrieved"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create personal task",
+        "description": "Creates personal task with priority, due date, and optional project (FR-30).",
+        "tags": [
+          "Projects & Tasks"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "title"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 200
+                  },
+                  "priority": {
+                    "type": "string",
+                    "enum": [
+                      "low",
+                      "medium",
+                      "high"
+                    ],
+                    "default": "medium"
+                  },
+                  "dueDate": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "projectId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Task created"
+          }
+        }
+      }
+    },
+    "/tasks/{id}": {
+      "patch": {
+        "summary": "Update task or toggle status",
+        "description": "Edits task fields or toggles status between todo and done (FR-32).",
+        "tags": [
+          "Projects & Tasks"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "todo",
+                      "done"
+                    ]
+                  },
+                  "priority": {
+                    "type": "string",
+                    "enum": [
+                      "low",
+                      "medium",
+                      "high"
+                    ]
+                  },
+                  "dueDate": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Task updated"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete task",
+        "description": "Removes task from personal board (FR-32).",
+        "tags": [
+          "Projects & Tasks"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task deleted"
+          }
+        }
+      }
+    },
+    "/notifications": {
+      "get": {
+        "summary": "List user notifications",
+        "description": "Chronological list of user's in-app notifications (FR-14, FR-25).",
+        "tags": [
+          "Notifications"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notifications retrieved"
+          }
+        }
+      }
+    },
+    "/notifications/unread-count": {
+      "get": {
+        "summary": "Get count of unread notifications",
+        "description": "Count for top navigation badge indicator (FR-25, FR-43).",
+        "tags": [
+          "Notifications"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Count retrieved"
+          }
+        }
+      }
+    },
+    "/notifications/{id}/read": {
+      "patch": {
+        "summary": "Mark notification as read",
+        "description": "Sets read status to true for specific notification (FR-25).",
+        "tags": [
+          "Notifications"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notification marked read"
+          }
+        }
+      }
+    },
+    "/notifications/read-all": {
+      "patch": {
+        "summary": "Mark all notifications as read",
+        "description": "Marks all unread notifications read for current user (FR-25).",
+        "tags": [
+          "Notifications"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "All notifications marked read"
+          }
+        }
+      }
+    },
+    "/messages/conversations": {
+      "get": {
+        "summary": "List messaging threads",
+        "description": "Returns conversation threads with partner info and unread counts (FR-34).",
+        "tags": [
+          "Messages"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conversations retrieved"
+          }
+        }
+      }
+    },
+    "/messages/with/{userId}": {
+      "get": {
+        "summary": "View message history with user",
+        "description": "Returns direct message exchange with specific user (FR-34).",
+        "tags": [
+          "Messages"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Message history retrieved"
+          }
+        }
+      }
+    },
+    "/messages": {
+      "post": {
+        "summary": "Send direct message (ASM-05 rules enforced)",
+        "description": "Sends message enforcing ASM-05 pairing (students message instructors and coordinators only) (FR-33).",
+        "tags": [
+          "Messages"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "recipientId",
+                  "body"
+                ],
+                "properties": {
+                  "recipientId": {
+                    "type": "string"
+                  },
+                  "body": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Message sent successfully"
+          },
+          "403": {
+            "description": "Forbidden message pair (student to student prohibited)"
+          }
+        }
+      }
+    },
+    "/activity/recent": {
+      "get": {
+        "summary": "View recent activity feed",
+        "description": "Returns chronological activity stream for user (FR-35, FR-36).",
+        "tags": [
+          "Activity"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Activity list retrieved"
+          }
+        }
+      }
+    },
+    "/activity/weekly": {
+      "get": {
+        "summary": "View weekly activity chart counts",
+        "description": "Returns counts of actions by day of week for dashboard chart (FR-37).",
+        "tags": [
+          "Activity"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Weekly activity counts retrieved"
+          }
+        }
+      }
+    },
+    "/search": {
+      "get": {
+        "summary": "Global search (ASM-06)",
+        "description": "Searches courses, internships, projects, tasks and messages permitted to user (FR-42).",
+        "tags": [
+          "Search"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results retrieved"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "responses": {
+      "BadRequestError": {
+        "description": "Bad request - validation failed"
+      },
+      "UnauthorizedError": {
+        "description": "Unauthorized - missing or invalid token"
+      },
+      "ForbiddenError": {
+        "description": "Forbidden - role or ownership violation"
+      },
+      "NotFoundError": {
+        "description": "Resource not found"
+      }
+    }
+  }
+}
