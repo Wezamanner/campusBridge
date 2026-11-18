@@ -37,7 +37,59 @@ import {
 
 const router = express.Router();
 
-// Apply authentication and coordinator-role authorization to ALL routes
+/**
+ * @route   GET /api/v1/coordinator/courses
+ * @desc    List all courses with instructor info, status, and enrollment counts.
+ *          Accessible by coordinator AND admin — registered BEFORE the global
+ *          coordinator-only guard so its own authorize('coordinator','admin')
+ *          takes precedence.
+ * @access  Coordinator or Admin
+ */
+router.get(
+  '/courses',
+  authenticate,
+  authorize('coordinator', 'admin'),
+  async (req, res, next) => {
+    try {
+      const { status, search, page = 1, limit = 20 } = req.query;
+      const filter = {};
+      if (status) filter.status = status;
+      if (search) {
+        const re = new RegExp(search, 'i');
+        filter.$or = [{ code: re }, { title: re }];
+      }
+      const skip = (Math.max(1, parseInt(page)) - 1) * Math.min(50, Math.max(1, parseInt(limit)));
+      const lim  = Math.min(50, Math.max(1, parseInt(limit)));
+
+      const { Course } = await import('../models/Course.js');
+      const [courses, total] = await Promise.all([
+        Course.find(filter)
+          .populate('instructorId', 'name email department')
+          .populate('createdBy',   'name email')
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(lim),
+        Course.countDocuments(filter),
+      ]);
+
+      return res.status(200).json({
+        success: true,
+        message: `Retrieved ${courses.length} course(s).`,
+        data: courses,
+        pagination: {
+          page: parseInt(page),
+          limit: lim,
+          total,
+          pages: Math.ceil(total / lim),
+        },
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// Apply authentication and coordinator-role authorization to ALL routes below
 router.use(authenticate, authorize('coordinator'));
 
 /**
@@ -94,50 +146,6 @@ export default router;
 // ─────────────────────────────────────────────────────────────────────────────
 // Phase 14: Course Management (FR-04 / UC-C01)
 // ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * @route   GET /api/v1/coordinator/courses
- * @desc    List all courses with instructor info, status, and enrollment counts
- * @access  Coordinator
- */
-router.get('/courses', async (req, res, next) => {
-  try {
-    const { status, search, page = 1, limit = 20 } = req.query;
-    const filter = {};
-    if (status) filter.status = status;
-    if (search) {
-      const re = new RegExp(search, 'i');
-      filter.$or = [{ code: re }, { title: re }];
-    }
-    const skip = (Math.max(1, parseInt(page)) - 1) * Math.min(50, Math.max(1, parseInt(limit)));
-    const lim  = Math.min(50, Math.max(1, parseInt(limit)));
-
-    const { Course } = await import('../models/Course.js');
-    const [courses, total] = await Promise.all([
-      Course.find(filter)
-        .populate('instructorId', 'name email department')
-        .populate('createdBy',   'name email')
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(lim),
-      Course.countDocuments(filter),
-    ]);
-
-    return res.status(200).json({
-      success: true,
-      message: `Retrieved ${courses.length} course(s).`,
-      data: courses,
-      pagination: {
-        page: parseInt(page),
-        limit: lim,
-        total,
-        pages: Math.ceil(total / lim),
-      },
-    });
-  } catch (err) {
-    next(err);
-  }
-});
 
 /**
  * @route   POST /api/v1/coordinator/courses
