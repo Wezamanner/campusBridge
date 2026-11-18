@@ -66,7 +66,7 @@ export default function CoordinatorCoursesPage() {
   const fetchInstructors = async () => {
     try {
       const res = await api.get('/coordinator/instructors');
-      if (res.success) setInstructors(res.instructors || []);
+      if (res.success) setInstructors(res.data || []);
     } catch {
       // Non-critical — instructor dropdown will be empty; coordinator can still create course
       console.warn('Could not load instructors list for coordinator.');

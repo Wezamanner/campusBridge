@@ -209,9 +209,9 @@ export const getRiskIndicators = async (req, res, next) => {
             id: 'lowProgress',
             label: 'Low Course Progress',
             description:
-              'Student has 0% progress in a course where assignments exist, based on Phase 9 progress analytics. Returns insufficient_data when no assignments exist in the course.',
+              'Student has 0% progress in a course where assignments exist. Returns insufficient_data when no assignments exist in the course.',
             srsReference: 'UC-I03 ("low progress"), FR-09',
-            dataSource: 'Progress collection & Phase 9 progress calculation',
+            dataSource: 'Progress collection',
             available: true,
             note: 'Evaluated using authoritative assignment and submission progress records.',
             blockedBy: null,
@@ -222,7 +222,7 @@ export const getRiskIndicators = async (req, res, next) => {
             description:
               'Student has at least one past-deadline assignment with no submission. Returns insufficient_data when no assignment records exist in the course.',
             srsReference: 'UC-I03 ("missed deadlines"), FR-06, FR-07',
-            dataSource: 'Assignment + Submission collections (Phases 6 & 7)',
+            dataSource: 'Assignment + Submission collections',
             available: true,
             note: 'Future deadlines and submitted assignments are not counted as missed.',
             blockedBy: null,
@@ -233,7 +233,7 @@ export const getRiskIndicators = async (req, res, next) => {
             description:
               'Assignment submission and grading performance metrics across assigned courses.',
             srsReference: 'FR-08, FR-09',
-            dataSource: 'Assignment, Submission, and Grade collections (Phases 6, 7, 8)',
+            dataSource: 'Assignment, Submission, and Grade collections',
             available: true,
             blockedBy: null,
           },
@@ -243,7 +243,7 @@ export const getRiskIndicators = async (req, res, next) => {
             description:
               'Tracked course completion metrics and average score analytics.',
             srsReference: 'FR-09',
-            dataSource: 'Progress service and collection (Phase 9)',
+            dataSource: 'Progress service and collection',
             available: true,
             blockedBy: null,
           },

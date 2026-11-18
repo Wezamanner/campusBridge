@@ -845,39 +845,39 @@ function buildDataAvailability(hasProgressData, hasSubmissionData) {
   return {
     enrollment: {
       available: true,
-      description: 'Student enrollment data is available (Phase 4 implemented).',
+      description: 'Student enrollment data is available.',
       blockedBy: null,
     },
     activity: {
       available: true,
       description:
-        'Platform activity tracking is available (ActivityLog, logins, submissions). Inactivity flag evaluates from this source.',
+        'Platform activity tracking is available. Inactivity flag evaluates from this source.',
       blockedBy: null,
     },
     progress: {
       available: true,
       description: hasProgressData
-        ? 'Progress records exist. Low-progress flag evaluates from Phase 9 progress analytics.'
-        : 'Progress analytics active (Phase 9). No progress records found for courses without assignments.',
+        ? 'Progress records exist. Low-progress flag is active.'
+        : 'Progress analytics active. No progress records found for courses without assignments.',
       blockedBy: null,
     },
     submissionHistory: {
       available: true,
       description: hasSubmissionData
-        ? 'Assignment and submission records exist. Missed-deadlines flag evaluates from Phase 6 & 7.'
-        : 'Assignment and submission tracking active (Phase 6 & 7). No overdue unsubmitted assignments found.',
+        ? 'Assignment and submission records exist. Missed-deadlines flag is active.'
+        : 'Assignment and submission tracking active. No overdue unsubmitted assignments found.',
       blockedBy: null,
     },
     assignmentPerformance: {
       available: true,
       description:
-        'Assignment and grading performance analytics are available (Phases 6, 7, and 8 integrated).',
+        'Assignment and grading performance analytics are available.',
       blockedBy: null,
     },
     progressAnalytics: {
       available: true,
       description:
-        'Progress analytics are available (Phase 9 integrated).',
+        'Progress analytics are available.',
       blockedBy: null,
     },
   };
