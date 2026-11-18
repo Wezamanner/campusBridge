@@ -1,5 +1,5 @@
 // In production, VITE_API_BASE_URL is set to the full Render URL including /api/v1
-// (e.g. https://campusbridge-api.onrender.com/api/v1).
+// Confirmed live backend: https://campusbridge-fqns.onrender.com/api/v1
 // In local development it is unset, so the Vite dev-server proxy handles /api/v1 → localhost:5001.
 const BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api/v1').replace(/\/$/, '');
 
