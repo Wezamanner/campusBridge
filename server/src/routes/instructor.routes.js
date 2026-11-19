@@ -47,11 +47,19 @@ router.get('/courses/:courseId/students', async (req, res, next) => {
       });
     }
 
+    // Query Enrollment model for enrolled students
+    const { Enrollment } = await import('../models/Enrollment.js');
+    const enrollments = await Enrollment.find({ courseId: course._id })
+      .populate('studentId', 'name email program year skills')
+      .sort({ enrolledAt: -1 });
+
+    const students = enrollments.map(e => e.studentId).filter(Boolean);
+
     res.status(200).json({
       success: true,
       message: 'Course students retrieved successfully.',
-      count: 0,
-      students: [],
+      count: students.length,
+      students,
     });
   } catch (error) {
     next(error);
