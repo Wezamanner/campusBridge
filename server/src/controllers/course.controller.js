@@ -47,8 +47,13 @@ export const getCourses = async (req, res, next) => {
         query.status = status;
       }
     } else if (userRole === 'student') {
-      // Students can browse active courses
-      query.status = 'active';
+      // Students see only courses assigned to them by coordinators — not the full catalog.
+      const enrolledCourseIds = (await Enrollment.find({ studentId: req.user._id }).select('courseId'))
+        .map(e => e.courseId);
+      query._id = { $in: enrolledCourseIds };
+      if (status && (status === 'active' || status === 'archived')) {
+        query.status = status;
+      }
     } else if (status) {
       query.status = status;
     }

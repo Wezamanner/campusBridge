@@ -54,8 +54,14 @@ router.get('/', getCourses);
 // Get single course details and authorized student associations
 router.get('/:id', getCourseById);
 
-// Student course enrollment (FR-05)
-router.post('/:id/enroll', authorize('student'), enrollCourse);
+// Student course enrollment — DISABLED: Enrollment is coordinator-controlled (business rule)
+// Coordinators assign students via POST /coordinator/courses/:id/students
+router.post('/:id/enroll', authorize(), (req, res) => {
+  res.status(403).json({
+    success: false,
+    message: 'Self-enrollment is not permitted. Course assignments are managed by your coordinator.',
+  });
+});
 
 // Course learning resources (FR-04, FR-05)
 // View learning resources (Assigned instructor or enrolled students)

@@ -93,6 +93,137 @@ router.get(
 router.use(authenticate, authorize('coordinator'));
 
 /**
+ * @route   POST /api/v1/coordinator/courses/:id/students
+ * @desc    Assign a student to a course (creates Enrollment record).
+ *          Idempotent — returns 200 if already enrolled.
+ * @access  Coordinator only
+ * @body    { studentId: string }
+ */
+router.post('/courses/:id/students', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { studentId } = req.body;
+
+    if (!studentId) {
+      return res.status(400).json({ success: false, message: 'studentId is required.' });
+    }
+
+    const { User } = await import('../models/User.js');
+    const { Course } = await import('../models/Course.js');
+    const { Enrollment } = await import('../models/Enrollment.js');
+    const mongoose = await import('mongoose');
+
+    if (!mongoose.default.isValidObjectId(id) || !mongoose.default.isValidObjectId(studentId)) {
+      return res.status(400).json({ success: false, message: 'Invalid course or student ID.' });
+    }
+
+    // Validate course exists
+    const course = await Course.findById(id);
+    if (!course) {
+      return res.status(404).json({ success: false, message: 'Course not found.' });
+    }
+
+    // Validate student exists and has student role
+    const student = await User.findOne({ _id: studentId, role: 'student', active: true, deletedAt: null });
+    if (!student) {
+      return res.status(404).json({ success: false, message: 'Student not found or inactive.' });
+    }
+
+    // Idempotent find-or-create
+    const existing = await Enrollment.findOne({ studentId, courseId: id });
+    if (existing) {
+      return res.status(200).json({
+        success: true,
+        message: 'Student is already enrolled in this course.',
+        data: { enrollmentId: existing._id, studentId, courseId: id, alreadyEnrolled: true },
+      });
+    }
+
+    const enrollment = await Enrollment.create({
+      studentId,
+      courseId: id,
+      enrolledAt: new Date(),
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: `Student ${student.name} assigned to ${course.code} successfully.`,
+      data: { enrollmentId: enrollment._id, studentId, courseId: id, alreadyEnrolled: false },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * @route   GET /api/v1/coordinator/courses/:id/students
+ * @desc    List all students enrolled in a course
+ * @access  Coordinator only
+ */
+router.get('/courses/:id/students', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { Course }     = await import('../models/Course.js');
+    const { Enrollment } = await import('../models/Enrollment.js');
+    const mongoose       = await import('mongoose');
+
+    if (!mongoose.default.isValidObjectId(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid course ID.' });
+    }
+
+    const course = await Course.findById(id);
+    if (!course) {
+      return res.status(404).json({ success: false, message: 'Course not found.' });
+    }
+
+    const enrollments = await Enrollment.find({ courseId: id })
+      .populate('studentId', 'name email program year')
+      .sort({ enrolledAt: -1 });
+
+    const students = enrollments.map(e => e.studentId).filter(Boolean);
+
+    return res.status(200).json({
+      success: true,
+      message: `${students.length} student(s) enrolled in ${course.code}.`,
+      data: students,
+      count: students.length,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * @route   DELETE /api/v1/coordinator/courses/:id/students/:studentId
+ * @desc    Remove a student from a course (delete enrollment record).
+ *          Does NOT delete submissions, grades or progress records.
+ * @access  Coordinator only
+ */
+router.delete('/courses/:id/students/:studentId', async (req, res, next) => {
+  try {
+    const { id, studentId } = req.params;
+    const { Enrollment } = await import('../models/Enrollment.js');
+    const mongoose       = await import('mongoose');
+
+    if (!mongoose.default.isValidObjectId(id) || !mongoose.default.isValidObjectId(studentId)) {
+      return res.status(400).json({ success: false, message: 'Invalid course or student ID.' });
+    }
+
+    const deleted = await Enrollment.findOneAndDelete({ courseId: id, studentId });
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: 'Enrollment not found.' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Student removed from course. Existing submissions and grades are preserved.',
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
  * @route   GET /api/v1/coordinator/organizations
  * @desc    List partner organizations with filtering and pagination
  * @access  Protected — coordinator
