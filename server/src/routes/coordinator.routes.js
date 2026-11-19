@@ -378,6 +378,32 @@ router.get('/instructors', async (req, res, next) => {
   }
 });
 
+/**
+ * @route   GET /api/v1/coordinator/students
+ * @desc    List active students for course assignment.
+ *          Narrow-scoped — returns name, email, program, year only.
+ *          Supports optional ?search= filter on name or email.
+ * @access  Coordinator only
+ */
+router.get('/students', async (req, res, next) => {
+  try {
+    const { User } = await import('../models/User.js');
+    const { search } = req.query;
+    const filter = { role: 'student', active: true, deletedAt: null };
+    if (search && search.trim()) {
+      const re = new RegExp(search.trim(), 'i');
+      filter.$or = [{ name: re }, { email: re }];
+    }
+    const students = await User.find(filter)
+      .select('_id name email program year')
+      .sort({ name: 1 })
+      .limit(100);
+    res.status(200).json({ success: true, message: 'Students retrieved successfully.', data: students });
+  } catch (error) {
+    next(error);
+  }
+});
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Additional Coordinator Routes for Testing
