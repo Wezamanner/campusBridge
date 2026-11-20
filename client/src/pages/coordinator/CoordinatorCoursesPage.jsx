@@ -10,7 +10,7 @@ import { api } from '../../services/api.js';
 import {
   BookOpen, Users, Archive, RefreshCw, Search,
   AlertCircle, ArrowRight, X, UserPlus, UserMinus,
-  CheckCircle2, Loader2, GraduationCap, Trash2,
+  CheckCircle2, Loader2, GraduationCap, Trash2, Edit3, Save,
 } from 'lucide-react';
 
 /**
@@ -28,6 +28,13 @@ export default function CoordinatorCoursesPage() {
   // ── Create course state ──────────────────────────────────────────────────
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [createForm, setCreateForm] = useState({ code: '', title: '', description: '', instructorId: '' });
+
+  // ── Edit course state ────────────────────────────────────────────────────
+  const [editCourse, setEditCourse]     = useState(null); // { _id, code, ... }
+  const [editForm, setEditForm]         = useState({ title: '', description: '', instructorId: '' });
+  const [editLoading, setEditLoading]   = useState(false);
+  const [editError, setEditError]       = useState(null);
+  const [editSuccess, setEditSuccess]   = useState(null);
   const [createLoading, setCreateLoading] = useState(false);
   const [createError, setCreateError]     = useState(null);
   const [createSuccess, setCreateSuccess] = useState(null);
@@ -102,6 +109,38 @@ export default function CoordinatorCoursesPage() {
       await api.patch(`/coordinator/courses/${courseId}/status`, { status: newStatus });
       fetchCourses();
     } catch (err) { setError(err.message || 'Failed to update course status.'); }
+  };
+
+  // ── Open edit modal prepopulated with existing course data ──────────────
+  const openEdit = (course) => {
+    setEditCourse(course);
+    setEditForm({
+      title:        course.title        || '',
+      description:  course.description  || '',
+      instructorId: (course.instructorId?._id || course.instructorId || ''),
+    });
+    setEditError(null);
+    setEditSuccess(null);
+  };
+
+  const handleEdit = async (e) => {
+    e.preventDefault();
+    if (!editForm.title.trim()) { setEditError('Title is required.'); return; }
+    try {
+      setEditLoading(true); setEditError(null);
+      const payload = {
+        title:       editForm.title.trim(),
+        description: editForm.description.trim(),
+      };
+      if (editForm.instructorId) payload.instructorId = editForm.instructorId;
+      const res = await api.put(`/coordinator/courses/${editCourse._id}`, payload);
+      if (res.success) {
+        setEditSuccess('Course updated successfully!');
+        fetchCourses();
+        setTimeout(() => { setEditCourse(null); setEditSuccess(null); }, 1200);
+      } else throw new Error(res.message || 'Update failed.');
+    } catch (err) { setEditError(err.message); }
+    finally { setEditLoading(false); }
   };
 
   // ── Student panel helpers ────────────────────────────────────────────────
@@ -329,6 +368,15 @@ export default function CoordinatorCoursesPage() {
                       <GraduationCap className="w-3.5 h-3.5 mr-1.5" />
                       Students
                     </Button>
+                    {/* Edit course button */}
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => openEdit(c)}
+                    >
+                      <Edit3 className="w-3.5 h-3.5 mr-1" />
+                      Edit
+                    </Button>
                     <Link to={`/instructor/courses/${c._id}`}
                       className="text-xs font-semibold text-[#00C8FF] hover:underline flex items-center gap-1">
                       View <ArrowRight className="w-3 h-3" />
@@ -345,6 +393,107 @@ export default function CoordinatorCoursesPage() {
           )}
         </DashboardCard>
       </div>
+
+      {/* ── Edit Course Modal ─────────────────────────────────────────────── */}
+      {editCourse && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="relative w-full max-w-lg rounded-2xl border border-[#1C2948] bg-[#0D1424] shadow-2xl">
+            {/* Header */}
+            <div className="p-5 border-b border-[#1C2948] flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <Edit3 className="w-5 h-5 text-[#00C8FF]" />
+                  Edit Course
+                </h3>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  <span className="font-mono text-[#00C8FF]">{editCourse.code}</span>
+                  {' — '}Course code cannot be changed.
+                </p>
+              </div>
+              <button
+                onClick={() => setEditCourse(null)}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-[#1C2948] transition-colors flex-shrink-0"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleEdit} className="p-5 space-y-4">
+              {editSuccess && (
+                <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0" />{editSuccess}
+                </div>
+              )}
+              {editError && (
+                <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 text-sm flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />{editError}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-medium text-gray-300 mb-1">Course Title *</label>
+                <input
+                  type="text"
+                  required
+                  value={editForm.title}
+                  onChange={e => setEditForm({ ...editForm, title: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg bg-[#101735] border border-[#1C2948] text-white text-sm focus:outline-none focus:border-[#00C8FF]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-300 mb-1">Description</label>
+                <textarea
+                  rows={3}
+                  value={editForm.description}
+                  onChange={e => setEditForm({ ...editForm, description: e.target.value })}
+                  placeholder="Short course description…"
+                  className="w-full px-3 py-2 rounded-lg bg-[#101735] border border-[#1C2948] text-white text-sm focus:outline-none focus:border-[#00C8FF] resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-300 mb-1">Assigned Instructor</label>
+                <select
+                  value={editForm.instructorId}
+                  onChange={e => setEditForm({ ...editForm, instructorId: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg bg-[#101735] border border-[#1C2948] text-white text-sm focus:outline-none focus:border-[#00C8FF]"
+                >
+                  <option value="">— Keep current / unassign —</option>
+                  {instructors.map(i => (
+                    <option key={i._id} value={i._id}>
+                      {i.name} ({i.email}){i.department ? ` — ${i.department}` : ''}
+                    </option>
+                  ))}
+                </select>
+                {editForm.instructorId && instructors.length > 0 && (() => {
+                  const current = instructors.find(i => i._id === editForm.instructorId);
+                  return current ? (
+                    <p className="mt-1 text-[10px] text-gray-500">
+                      Currently selected: <span className="text-[#8CEBFF]">{current.name}</span>
+                    </p>
+                  ) : null;
+                })()}
+                <p className="mt-1 text-[10px] text-gray-600">
+                  Changing the instructor does not remove enrolled students or delete academic records.
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button type="submit" size="sm" disabled={editLoading}>
+                  {editLoading
+                    ? <><Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />Saving…</>
+                    : <><Save className="w-3.5 h-3.5 mr-1.5" />Save Changes</>}
+                </Button>
+                <Button type="button" size="sm" variant="secondary" onClick={() => setEditCourse(null)}>
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* ── Student Management Modal ──────────────────────────────────────── */}
       {studentPanel && (
