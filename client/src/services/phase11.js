@@ -153,6 +153,29 @@ export const adminService = {
   createAnnouncement: (data) => {
     return api.post('/admin/announcements', data);
   },
+  /**
+   * Update an existing announcement (FR-47)
+   * @param {string} id - Announcement ID
+   * @param {Object} updates - { message, audience, startsAt, endsAt, published }
+   */
+  updateAnnouncement: (id, updates) => {
+    return api.put(`/admin/announcements/${id}`, updates);
+  },
+  /**
+   * Delete an announcement (FR-47)
+   * @param {string} id - Announcement ID
+   */
+  deleteAnnouncement: (id) => {
+    return api.delete(`/admin/announcements/${id}`);
+  },
+
+  /**
+   * Preview an announcement before publishing (FR-47)
+   * @param {Object} data - { message, audience, endsAt }
+   */
+  previewAnnouncement: (data) => {
+    return api.post('/admin/announcements/preview', data);
+  },
 
   /**
    * Update public website content (UC-A04, FR-47)

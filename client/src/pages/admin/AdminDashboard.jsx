@@ -24,7 +24,10 @@ import {
   Download,
   X,
   Save,
-  AlertCircle
+  AlertCircle,
+  Trash2,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 
 const ADMIN_PATH_TO_SECTION = {
@@ -94,6 +97,19 @@ export default function AdminDashboard() {
   const [announcementEndsAt, setAnnouncementEndsAt] = useState('');
   const [announcementLoading, setAnnouncementLoading] = useState(false);
   const [announcementFeedback, setAnnouncementFeedback] = useState(null);
+
+  // Announcement edit/delete/preview state (FR-47)
+  const [editingAnnouncement, setEditingAnnouncement] = useState(null); // announcement object
+  const [editAnnMsg, setEditAnnMsg]           = useState('');
+  const [editAnnAudience, setEditAnnAudience] = useState('both');
+  const [editAnnEndsAt, setEditAnnEndsAt]     = useState('');
+  const [editAnnPublished, setEditAnnPublished] = useState(true);
+  const [editAnnLoading, setEditAnnLoading]   = useState(false);
+  const [editAnnError, setEditAnnError]       = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null); // announcement _id to delete
+  const [deleteLoading, setDeleteLoading]     = useState(false);
+  const [previewData, setPreviewData]         = useState(null); // preview object
+  const [previewLoading, setPreviewLoading]   = useState(false);
 
   // Staff creation state (UC-A02)
   const [showStaffModal, setShowStaffModal] = useState(false);
@@ -209,6 +225,74 @@ export default function AdminDashboard() {
     } finally {
       setAnnouncementLoading(false);
     }
+  };
+
+  // ── Preview (FR-47) ──────────────────────────────────────────────────────
+  const handlePreview = async () => {
+    if (!announcementMsg.trim() || !announcementEndsAt) return;
+    try {
+      setPreviewLoading(true);
+      const res = await adminService.previewAnnouncement({
+        message: announcementMsg,
+        audience: announcementAudience,
+        endsAt: new Date(announcementEndsAt).toISOString(),
+        published: true,
+      });
+      if (res.success) setPreviewData(res.data);
+    } catch { /* silent */ }
+    finally { setPreviewLoading(false); }
+  };
+
+  // ── Open edit modal prepopulated ─────────────────────────────────────────
+  const openEditAnnouncement = (a) => {
+    setEditingAnnouncement(a);
+    setEditAnnMsg(a.message || '');
+    setEditAnnAudience(a.audience || 'both');
+    setEditAnnEndsAt(a.endsAt ? a.endsAt.slice(0, 10) : '');
+    setEditAnnPublished(a.published !== false);
+    setEditAnnError(null);
+  };
+
+  const handleUpdateAnnouncement = async (e) => {
+    e.preventDefault();
+    if (!editAnnMsg.trim() || !editAnnEndsAt) {
+      setEditAnnError('Message and expiry date are required.');
+      return;
+    }
+    try {
+      setEditAnnLoading(true); setEditAnnError(null);
+      const res = await adminService.updateAnnouncement(editingAnnouncement._id, {
+        message:   editAnnMsg.trim(),
+        audience:  editAnnAudience,
+        endsAt:    new Date(editAnnEndsAt).toISOString(),
+        published: editAnnPublished,
+      });
+      if (res.success) {
+        setEditingAnnouncement(null);
+        fetchSettingsAndAnnouncements();
+        setAnnouncementFeedback({ type: 'success', text: 'Announcement updated successfully.' });
+        setTimeout(() => setAnnouncementFeedback(null), 3000);
+      } else throw new Error(res.message || 'Update failed.');
+    } catch (err) { setEditAnnError(err.message); }
+    finally { setEditAnnLoading(false); }
+  };
+
+  // ── Delete ───────────────────────────────────────────────────────────────
+  const handleDeleteAnnouncement = async () => {
+    if (!confirmDeleteId) return;
+    try {
+      setDeleteLoading(true);
+      const res = await adminService.deleteAnnouncement(confirmDeleteId);
+      if (res.success) {
+        setConfirmDeleteId(null);
+        fetchSettingsAndAnnouncements();
+        setAnnouncementFeedback({ type: 'success', text: 'Announcement deleted.' });
+        setTimeout(() => setAnnouncementFeedback(null), 3000);
+      }
+    } catch (err) {
+      setAnnouncementFeedback({ type: 'error', text: err.message || 'Delete failed.' });
+      setConfirmDeleteId(null);
+    } finally { setDeleteLoading(false); }
   };
 
   const handleCreateStaff = async (e) => {
@@ -721,10 +805,42 @@ export default function AdminDashboard() {
                   />
                 </div>
               </div>
-              <Button type="submit" size="sm" disabled={announcementLoading}>
-                <Megaphone className="w-3.5 h-3.5 mr-1.5" />
-                {announcementLoading ? 'Publishing...' : 'Publish Announcement'}
-              </Button>
+              <div className="flex gap-2">
+                <Button type="submit" size="sm" disabled={announcementLoading}>
+                  <Megaphone className="w-3.5 h-3.5 mr-1.5" />
+                  {announcementLoading ? 'Publishing...' : 'Publish Announcement'}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  disabled={previewLoading}
+                  onClick={handlePreview}
+                >
+                  <Eye className="w-3.5 h-3.5 mr-1.5" />
+                  {previewLoading ? 'Loading...' : 'Preview'}
+                </Button>
+              </div>
+              {previewData && (
+                <div className="mt-3 p-3 rounded-xl bg-[#101735] border border-[#00C8FF]/30 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-[#00C8FF] uppercase tracking-wider">Preview</span>
+                    <button onClick={() => setPreviewData(null)} className="text-gray-400 hover:text-white">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <p className="text-sm text-white font-medium">{previewData.message}</p>
+                  <p className="text-xs text-gray-400">
+                    Audience: <span className="text-[#00C8FF]">{previewData.audience}</span>
+                    {previewData.endsAt && (
+                      <> · Expires: {new Date(previewData.endsAt).toLocaleDateString()}</>
+                    )}
+                  </p>
+                  <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                    Draft Preview — not published
+                  </span>
+                </div>
+              )}
             </form>
 
             {/* List Announcements */}
@@ -736,15 +852,31 @@ export default function AdminDashboard() {
                 <div className="divide-y divide-[#1C2948]">
                   {announcements.map((a) => (
                     <div key={a._id} className="py-2.5 flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-sm text-white font-medium">{a.message}</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-white font-medium truncate">{a.message}</p>
                         <p className="text-xs text-gray-400 mt-0.5">
                           Audience: <span className="text-[#00C8FF]">{a.audience}</span> · Expires: {new Date(a.endsAt).toLocaleDateString()}
                         </p>
                       </div>
-                      <Badge variant={a.published ? 'success' : 'neutral'} size="sm">
-                        {a.published ? 'Published' : 'Draft'}
-                      </Badge>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <Badge variant={a.published ? 'success' : 'neutral'} size="sm">
+                          {a.published ? 'Published' : 'Draft'}
+                        </Badge>
+                        <button
+                          onClick={() => openEditAnnouncement(a)}
+                          className="p-1.5 rounded-lg hover:bg-[#00C8FF]/10 text-gray-400 hover:text-[#00C8FF] transition-colors"
+                          title="Edit announcement"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setConfirmDeleteId(a._id)}
+                          className="p-1.5 rounded-lg hover:bg-rose-500/10 text-gray-400 hover:text-rose-400 transition-colors"
+                          title="Delete announcement"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1029,6 +1161,135 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+
+      {/* Edit Announcement Modal (FR-47) */}
+      {editingAnnouncement && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-[#1C2948] rounded-2xl border border-[#00C8FF]/30 shadow-2xl max-w-md w-full">
+            <div className="p-5 border-b border-[#1C2948] flex items-center justify-between">
+              <h3 className="text-base font-bold text-white">Edit Announcement</h3>
+              <button
+                onClick={() => setEditingAnnouncement(null)}
+                className="p-1 rounded-lg hover:bg-[#101735]/60 text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleUpdateAnnouncement} className="p-5 space-y-3">
+              {editAnnError && (
+                <div className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs">
+                  {editAnnError}
+                </div>
+              )}
+              <div>
+                <label className="block text-xs font-medium text-gray-300 mb-1">Message (max 200 chars)</label>
+                <input
+                  type="text"
+                  maxLength={200}
+                  value={editAnnMsg}
+                  onChange={(e) => setEditAnnMsg(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg bg-[#101735] border border-[#1C2948] text-white text-sm focus:outline-none focus:border-[#00C8FF]"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-300 mb-1">Audience</label>
+                  <select
+                    value={editAnnAudience}
+                    onChange={(e) => setEditAnnAudience(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg bg-[#101735] border border-[#1C2948] text-white text-sm focus:outline-none focus:border-[#00C8FF]"
+                  >
+                    <option value="both">Both</option>
+                    <option value="dashboard">Dashboards Only</option>
+                    <option value="public">Public Only</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-300 mb-1">Expiry Date</label>
+                  <input
+                    type="date"
+                    value={editAnnEndsAt}
+                    onChange={(e) => setEditAnnEndsAt(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg bg-[#101735] border border-[#1C2948] text-white text-sm focus:outline-none focus:border-[#00C8FF]"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditAnnPublished(!editAnnPublished)}
+                  className={`w-10 h-5 rounded-full relative transition-colors ${editAnnPublished ? 'bg-emerald-500' : 'bg-gray-600'}`}
+                >
+                  <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${editAnnPublished ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                </button>
+                <span className="text-xs font-medium text-gray-300">
+                  {editAnnPublished ? 'Published' : 'Draft (unpublished)'}
+                </span>
+              </div>
+              <div className="flex gap-3 pt-1">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setEditingAnnouncement(null)}
+                  disabled={editAnnLoading}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" size="sm" disabled={editAnnLoading} className="flex-1">
+                  <Save className="w-3.5 h-3.5 mr-1.5" />
+                  {editAnnLoading ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Announcement Confirmation (FR-47) */}
+      {confirmDeleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-[#1C2948] rounded-2xl border border-rose-500/30 shadow-2xl max-w-sm w-full p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-rose-500/20 flex items-center justify-center flex-shrink-0">
+                <Trash2 className="w-5 h-5 text-rose-400" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">Delete Announcement</h3>
+                <p className="text-xs text-gray-400 mt-0.5">This action cannot be undone.</p>
+              </div>
+            </div>
+            <p className="text-sm text-gray-300">
+              Are you sure you want to permanently delete this announcement?
+            </p>
+            <div className="flex gap-3">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setConfirmDeleteId(null)}
+                disabled={deleteLoading}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                variant="danger"
+                onClick={handleDeleteAnnouncement}
+                disabled={deleteLoading}
+                className="flex-1"
+              >
+                <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                {deleteLoading ? 'Deleting...' : 'Delete'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </AppLayout>
   );
 }

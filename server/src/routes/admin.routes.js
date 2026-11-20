@@ -126,6 +126,21 @@ router.put('/announcements/:id', updateAnnouncement);
  */
 router.delete('/announcements/:id', deleteAnnouncement);
 
+/**
+ * @route   POST /api/v1/admin/announcements/preview
+ * @desc    Preview how an announcement will appear before publishing (FR-47)
+ * @access  Admin only
+ */
+router.post('/announcements/preview', async (req, res, next) => {
+  try {
+    const { previewAnnouncement } = await import('../services/settings.service.js');
+    const preview = await previewAnnouncement(req.body);
+    return res.status(200).json({ success: true, message: 'Preview generated.', data: preview });
+  } catch (err) {
+    next(err);
+  }
+});
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Additional Admin Routes for Testing
