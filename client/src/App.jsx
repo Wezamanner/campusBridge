@@ -37,9 +37,10 @@ import CoordinatorCoursesPage from './pages/coordinator/CoordinatorCoursesPage.j
 // Admin pages
 import AdminDashboard from './pages/admin/AdminDashboard.jsx';
 
-// Shared pages (messages + notifications used by instructor, coordinator, admin)
+// Shared pages (messages, notifications, profile used by instructor, coordinator, admin)
 import MessagesPage from './pages/shared/MessagesPage.jsx';
 import NotificationsPage from './pages/shared/NotificationsPage.jsx';
+import ProfilePage from './pages/shared/ProfilePage.jsx';
 
 export default function App() {
   return (
@@ -77,6 +78,7 @@ export default function App() {
             <Route path="/instructor/grading"     element={<ProtectedRoute allowedRoles={['instructor']}><InstructorGradingPage /></ProtectedRoute>} />
             <Route path="/instructor/messages"    element={<ProtectedRoute allowedRoles={['instructor']}><MessagesPage /></ProtectedRoute>} />
             <Route path="/instructor/notifications" element={<ProtectedRoute allowedRoles={['instructor']}><NotificationsPage /></ProtectedRoute>} />
+            <Route path="/instructor/profile"     element={<ProtectedRoute allowedRoles={['instructor']}><ProfilePage /></ProtectedRoute>} />
 
             {/* ── Coordinator ─────────────────────────────────────────── */}
             <Route path="/coordinator/dashboard"      element={<ProtectedRoute allowedRoles={['coordinator']}><CoordinatorDashboard /></ProtectedRoute>} />
@@ -88,6 +90,7 @@ export default function App() {
             <Route path="/coordinator/reports"        element={<ProtectedRoute allowedRoles={['coordinator']}><CoordinatorDashboard /></ProtectedRoute>} />
             <Route path="/coordinator/messages"       element={<ProtectedRoute allowedRoles={['coordinator']}><MessagesPage /></ProtectedRoute>} />
             <Route path="/coordinator/notifications"  element={<ProtectedRoute allowedRoles={['coordinator']}><NotificationsPage /></ProtectedRoute>} />
+            <Route path="/coordinator/profile"        element={<ProtectedRoute allowedRoles={['coordinator']}><ProfilePage /></ProtectedRoute>} />
 
             {/* ── Admin ───────────────────────────────────────────────── */}
             <Route path="/admin/dashboard"      element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
@@ -98,6 +101,7 @@ export default function App() {
             <Route path="/admin/content"        element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
             <Route path="/admin/reports"        element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
             <Route path="/admin/notifications"  element={<ProtectedRoute allowedRoles={['admin']}><NotificationsPage /></ProtectedRoute>} />
+            <Route path="/admin/profile"        element={<ProtectedRoute allowedRoles={['admin']}><ProfilePage /></ProtectedRoute>} />
 
             {/* ── Fallback ────────────────────────────────────────────── */}
             <Route path="*" element={<LandingPage />} />

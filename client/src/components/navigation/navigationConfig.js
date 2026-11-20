@@ -38,6 +38,7 @@ export const ROLE_NAVIGATION = {
     { name: 'Students',      path: '/instructor/students',      icon: Users },
     { name: 'Messages',      path: '/instructor/messages',      icon: MessageSquare },
     { name: 'Notifications', path: '/instructor/notifications', icon: Bell },
+    { name: 'Profile',       path: '/instructor/profile',       icon: User },
   ],
   coordinator: [
     { name: 'Dashboard',    path: '/coordinator/dashboard',    icon: LayoutDashboard },
@@ -48,6 +49,7 @@ export const ROLE_NAVIGATION = {
     { name: 'Reports',      path: '/coordinator/reports',      icon: FileSpreadsheet },
     { name: 'Messages',     path: '/coordinator/messages',     icon: MessageSquare },
     { name: 'Notifications',path: '/coordinator/notifications',icon: Bell },
+    { name: 'Profile',      path: '/coordinator/profile',      icon: User },
   ],
   admin: [
     { name: 'Dashboard',    path: '/admin/dashboard',      icon: LayoutDashboard },
@@ -57,6 +59,7 @@ export const ROLE_NAVIGATION = {
     { name: 'Public Site',  path: '/admin/content',        icon: Globe },
     { name: 'Reports',      path: '/admin/reports',        icon: FileSpreadsheet },
     { name: 'Notifications',path: '/admin/notifications',  icon: Bell },
+    { name: 'Profile',      path: '/admin/profile',        icon: User },
   ],
 };
 

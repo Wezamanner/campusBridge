@@ -30,6 +30,11 @@ export function AuthProvider({ children }) {
         if (response.success && response.data) {
           setUser(response.data);
           localStorage.setItem('campusbridge_user', JSON.stringify(response.data));
+          // FR-39: propagate server-stored theme preference so ThemeContext picks it up
+          const serverTheme = response.data?.preferences?.theme;
+          if (serverTheme === 'dark' || serverTheme === 'light') {
+            localStorage.setItem('campusbridge_theme', serverTheme);
+          }
         }
       } catch (err) {
         console.warn('Session restoration failed:', err.message);
@@ -55,6 +60,11 @@ export function AuthProvider({ children }) {
         setToken(jwtToken);
         localStorage.setItem('campusbridge_token', jwtToken);
         localStorage.setItem('campusbridge_user', JSON.stringify(userData));
+        // FR-39: sync server-stored theme preference on login
+        const loginTheme = userData?.preferences?.theme;
+        if (loginTheme === 'dark' || loginTheme === 'light') {
+          localStorage.setItem('campusbridge_theme', loginTheme);
+        }
         return userData;
       }
     } catch (err) {

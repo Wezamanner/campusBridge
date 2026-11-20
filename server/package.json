@@ -24,6 +24,7 @@
     "test:phase13": "node src/tests/phase13.test.js",
     "test:phase13-defects": "node src/tests/phase13.1-defects.test.js",
     "test:phase14": "node src/tests/phase14-unified.test.js",
+    "test:fr38-fr39": "node src/tests/fr38-fr39-preferences.test.js",
     "seed:users": "node src/utils/seedUsers.js"
   },
   "dependencies": {
