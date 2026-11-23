@@ -1,7 +1,30 @@
+/**
+ * AuthContext — authentication state for all roles.
+ *
+ * FR-39 theme sync:
+ *   After login and session restore this context dispatches a
+ *   'campusbridge:themechange' CustomEvent on window so that the
+ *   already-mounted ThemeContext can update its React state immediately.
+ *   Writing to localStorage alone does not re-trigger ThemeContext's
+ *   useState initializer, which only runs once on mount.
+ */
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { api } from '../services/api.js';
 
 const AuthContext = createContext(null);
+
+/**
+ * Dispatch a theme-change event that ThemeContext listens for.
+ * Also writes to localStorage so the value persists across page loads.
+ * Does nothing for null/undefined/invalid values.
+ */
+function applyServerTheme(theme) {
+  if (theme !== 'dark' && theme !== 'light') return;
+  localStorage.setItem('campusbridge_theme', theme);
+  window.dispatchEvent(
+    new CustomEvent('campusbridge:themechange', { detail: { theme } })
+  );
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
@@ -12,11 +35,13 @@ export function AuthProvider({ children }) {
       return null;
     }
   });
-  const [token, setToken] = useState(() => localStorage.getItem('campusbridge_token') || null);
+  const [token, setToken] = useState(
+    () => localStorage.getItem('campusbridge_token') || null
+  );
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState(null);
 
-  // Restore authenticated session on initial mount
+  // ── Session restore on mount ───────────────────────────────────────────────
   useEffect(() => {
     const restoreSession = async () => {
       const storedToken = localStorage.getItem('campusbridge_token');
@@ -24,17 +49,13 @@ export function AuthProvider({ children }) {
         setLoading(false);
         return;
       }
-
       try {
         const response = await api.get('/auth/me');
         if (response.success && response.data) {
           setUser(response.data);
           localStorage.setItem('campusbridge_user', JSON.stringify(response.data));
-          // FR-39: propagate server-stored theme preference so ThemeContext picks it up
-          const serverTheme = response.data?.preferences?.theme;
-          if (serverTheme === 'dark' || serverTheme === 'light') {
-            localStorage.setItem('campusbridge_theme', serverTheme);
-          }
+          // FR-39: apply server theme reactively (event + localStorage)
+          applyServerTheme(response.data?.preferences?.theme);
         }
       } catch (err) {
         console.warn('Session restoration failed:', err.message);
@@ -50,6 +71,7 @@ export function AuthProvider({ children }) {
     restoreSession();
   }, []);
 
+  // ── Login ──────────────────────────────────────────────────────────────────
   const login = async (email, password) => {
     setAuthError(null);
     try {
@@ -60,11 +82,8 @@ export function AuthProvider({ children }) {
         setToken(jwtToken);
         localStorage.setItem('campusbridge_token', jwtToken);
         localStorage.setItem('campusbridge_user', JSON.stringify(userData));
-        // FR-39: sync server-stored theme preference on login
-        const loginTheme = userData?.preferences?.theme;
-        if (loginTheme === 'dark' || loginTheme === 'light') {
-          localStorage.setItem('campusbridge_theme', loginTheme);
-        }
+        // FR-39: apply server theme reactively (event + localStorage)
+        applyServerTheme(userData?.preferences?.theme);
         return userData;
       }
     } catch (err) {
@@ -73,6 +92,7 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // ── Register ───────────────────────────────────────────────────────────────
   const register = async (formData) => {
     setAuthError(null);
     try {
@@ -83,6 +103,8 @@ export function AuthProvider({ children }) {
         setToken(jwtToken);
         localStorage.setItem('campusbridge_token', jwtToken);
         localStorage.setItem('campusbridge_user', JSON.stringify(userData));
+        // New accounts default to 'dark'; apply it reactively.
+        applyServerTheme(userData?.preferences?.theme);
         return userData;
       }
     } catch (err) {
@@ -91,6 +113,7 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // ── Logout ─────────────────────────────────────────────────────────────────
   const logout = async () => {
     try {
       await api.post('/auth/logout', {});
@@ -105,6 +128,7 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // ── Partial user update (name etc. from profile save) ─────────────────────
   const updateCurrentUser = (partialUser) => {
     setUser((prev) => {
       const updated = { ...prev, ...partialUser };
