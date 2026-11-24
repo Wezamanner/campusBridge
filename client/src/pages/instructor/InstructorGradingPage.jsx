@@ -69,20 +69,20 @@ export default function InstructorGradingPage() {
   };
 
   const handleSubmitGrade = async (submission) => {
-    const g = grading[submission._id] || {};
+    const g = grading[submission.id] || {};
     if (g.score === undefined || g.score === '' || isNaN(Number(g.score))) {
       setGrading(prev => ({
         ...prev,
-        [submission._id]: { ...prev[submission._id], error: 'A numeric score is required.' },
+        [submission.id]: { ...prev[submission.id], error: 'A numeric score is required.' },
       }));
       return;
     }
-    const maxPoints = submission.assignmentId?.totalPoints;
+    const maxPoints = submission.maxScore;
     const scoreNum = Number(g.score);
     if (maxPoints !== undefined && (scoreNum < 0 || scoreNum > maxPoints)) {
       setGrading(prev => ({
         ...prev,
-        [submission._id]: { ...prev[submission._id], error: `Score must be between 0 and ${maxPoints}.` },
+        [submission.id]: { ...prev[submission.id], error: `Score must be between 0 and ${maxPoints}.` },
       }));
       return;
     }
@@ -90,16 +90,16 @@ export default function InstructorGradingPage() {
     try {
       setGrading(prev => ({
         ...prev,
-        [submission._id]: { ...prev[submission._id], loading: true, error: null, success: null },
+        [submission.id]: { ...prev[submission.id], loading: true, error: null, success: null },
       }));
-      const res = await api.patch(`/instructor/submissions/${submission._id}/grade`, {
+      const res = await api.patch(`/instructor/submissions/${submission.id}/grade`, {
         score: scoreNum,
         feedback: g.feedback || '',
       });
       if (res.success) {
         setGrading(prev => ({
           ...prev,
-          [submission._id]: { ...prev[submission._id], loading: false, success: 'Graded successfully!' },
+          [submission.id]: { ...prev[submission.id], loading: false, success: 'Graded successfully!' },
         }));
         // Refresh list after short delay
         setTimeout(() => fetchSubmissions(), 1200);
@@ -109,7 +109,7 @@ export default function InstructorGradingPage() {
     } catch (err) {
       setGrading(prev => ({
         ...prev,
-        [submission._id]: { ...prev[submission._id], loading: false, error: err.message },
+        [submission.id]: { ...prev[submission.id], loading: false, error: err.message },
       }));
     }
   };
@@ -177,12 +177,12 @@ export default function InstructorGradingPage() {
           ) : (
             <div className="divide-y divide-[#1C2948]">
               {submissions.map((sub) => {
-                const g = grading[sub._id] || {};
-                const isExpanded = expandedId === sub._id;
+                const g = grading[sub.id] || {};
+                const isExpanded = expandedId === sub.id;
                 const isGraded = sub.status === 'Graded';
 
                 return (
-                  <div key={sub._id} className="py-4 space-y-3">
+                  <div key={sub.id} className="py-4 space-y-3">
                     {/* Submission header row */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-start gap-3 min-w-0">
@@ -191,16 +191,16 @@ export default function InstructorGradingPage() {
                         </div>
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-white truncate">
-                            {sub.assignmentId?.title || 'Assignment'}
+                            {sub.assignmentTitle || 'Assignment'}
                           </p>
                           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-0.5">
                             <span className="flex items-center gap-1 text-xs text-gray-400">
                               <User className="w-3 h-3" />
-                              {sub.studentId?.name || sub.studentId?.email || 'Student'}
+                              {sub.studentName || sub.studentEmail || 'Student'}
                             </span>
                             <span className="flex items-center gap-1 text-xs text-gray-400">
                               <BookOpen className="w-3 h-3" />
-                              {sub.assignmentId?.courseId?.code || sub.assignmentId?.courseId?.title || 'Course'}
+                              {sub.courseCode || sub.courseTitle || 'Course'}
                             </span>
                             <span className="flex items-center gap-1 text-xs text-gray-400">
                               <Calendar className="w-3 h-3" />
@@ -219,11 +219,11 @@ export default function InstructorGradingPage() {
                         {isGraded && sub.grade?.score !== undefined && (
                           <span className="flex items-center gap-1 text-xs font-bold text-emerald-400">
                             <Star className="w-3.5 h-3.5" />
-                            {sub.grade.score}/{sub.assignmentId?.totalPoints || '?'}
+                            {sub.grade.score}/{sub.maxScore || '?'}
                           </span>
                         )}
                         <button
-                          onClick={() => setExpandedId(isExpanded ? null : sub._id)}
+                          onClick={() => setExpandedId(isExpanded ? null : sub.id)}
                           className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-[#1C2948]/60 transition-colors"
                           aria-label={isExpanded ? 'Collapse' : 'Expand'}
                         >
@@ -269,7 +269,7 @@ export default function InstructorGradingPage() {
                             <p className="text-xs font-semibold text-emerald-400">Already Graded</p>
                             <p className="text-sm text-white">
                               Score: <span className="font-bold">{sub.grade.score}</span>
-                              {sub.assignmentId?.totalPoints ? `/${sub.assignmentId.totalPoints}` : ''}
+                              {sub.maxScore ? `/${sub.maxScore}` : ''}
                             </p>
                             {sub.grade.feedback && (
                               <p className="text-xs text-gray-300">Feedback: {sub.grade.feedback}</p>
@@ -297,15 +297,15 @@ export default function InstructorGradingPage() {
                           <div className="flex flex-col sm:flex-row gap-3">
                             <div className="sm:w-32">
                               <label className="block text-xs font-medium text-gray-300 mb-1">
-                                Score{sub.assignmentId?.totalPoints ? ` (max ${sub.assignmentId.totalPoints})` : ''}
+                                Score{sub.maxScore ? ` (max ${sub.maxScore})` : ''}
                               </label>
                               <input
                                 type="number"
                                 min={0}
-                                max={sub.assignmentId?.totalPoints}
+                                max={sub.maxScore}
                                 step={0.5}
                                 defaultValue={isGraded ? sub.grade?.score : ''}
-                                onChange={e => handleGradeChange(sub._id, 'score', e.target.value)}
+                                onChange={e => handleGradeChange(sub.id, 'score', e.target.value)}
                                 placeholder="0"
                                 className="w-full px-3 py-2 rounded-lg bg-[#101735] border border-[#1C2948] text-white text-sm focus:outline-none focus:border-[#00C8FF]"
                               />
@@ -317,7 +317,7 @@ export default function InstructorGradingPage() {
                               <textarea
                                 rows={2}
                                 defaultValue={isGraded ? sub.grade?.feedback : ''}
-                                onChange={e => handleGradeChange(sub._id, 'feedback', e.target.value)}
+                                onChange={e => handleGradeChange(sub.id, 'feedback', e.target.value)}
                                 placeholder="Written feedback for the student..."
                                 className="w-full px-3 py-2 rounded-lg bg-[#101735] border border-[#1C2948] text-white text-sm focus:outline-none focus:border-[#00C8FF] resize-none"
                               />
