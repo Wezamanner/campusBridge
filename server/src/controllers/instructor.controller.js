@@ -109,6 +109,7 @@ export const getInstructorSubmissions = async (req, res) => {
           id: sub._id.toString(),
           assignmentId: assignment?._id?.toString() || '',
           assignmentTitle: assignment?.title || 'Unknown Assignment',
+          maxScore: assignment?.maxScore || null,
           courseId: course?._id?.toString() || '',
           courseCode: course?.code || '',
           courseTitle: course?.title || '',
