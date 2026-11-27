@@ -21,7 +21,7 @@ export default function DataTable({
       className={`w-full overflow-x-auto rounded-xl ${className}`}
       style={{ border: '1px solid var(--cb-border)' }}
     >
-      <table className="w-full text-left text-sm border-collapse">
+      <table className="w-full text-left text-sm border-collapse" style={{ minWidth: '480px' }}>
         <thead>
           <tr
             className="text-xs uppercase tracking-wider"
