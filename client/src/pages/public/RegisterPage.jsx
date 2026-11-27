@@ -114,7 +114,7 @@ export default function RegisterPage() {
         </div>
 
         {/* Form Container */}
-        <div className="p-8 rounded-2xl bg-[#1C2948]/70 border border-[#00C8FF]/20 backdrop-blur-xl shadow-2xl space-y-6">
+        <div className="p-5 sm:p-8 rounded-2xl bg-[#1C2948]/70 border border-[#00C8FF]/20 backdrop-blur-xl shadow-2xl space-y-6">
           {!checkingSettings && !registrationOpen ? (
             <div className="text-center py-6 space-y-4">
               <div className="w-12 h-12 mx-auto rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center border border-rose-500/30">
