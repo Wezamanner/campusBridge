@@ -125,7 +125,7 @@ export default function LandingPage() {
     <div className={`min-h-screen transition-colors duration-300 ${page}`}>
 
       {/* ── HEADER ──────────────────────────────────────────────────────────── */}
-      <header className={`sticky top-0 z-50 border-b backdrop-blur-md px-6 py-4 flex items-center justify-between ${
+      <header className={`sticky top-0 z-50 border-b backdrop-blur-md px-4 sm:px-6 py-4 flex items-center justify-between ${
         isDark ? 'bg-[#101735]/90 border-[#1C2948]' : 'bg-white/90 border-gray-200'
       }`}>
         {/* Logo */}
@@ -209,13 +209,13 @@ export default function LandingPage() {
         </div>
       )}
 
-      <main className="max-w-6xl mx-auto px-5 md:px-8 pb-20 space-y-20">
+      <main className="max-w-6xl mx-auto px-4 sm:px-5 md:px-8 pb-20 space-y-16 sm:space-y-20">
 
         {/* ── HERO ────────────────────────────────────────────────────────────── */}
         <section className="pt-16 md:pt-24 text-center space-y-6">
           <Badge color="slate">Academic · Industry · Outcomes</Badge>
 
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight max-w-3xl mx-auto">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight max-w-3xl mx-auto">
             {heroTitle}
           </h1>
 
