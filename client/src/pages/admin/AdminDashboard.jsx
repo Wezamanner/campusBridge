@@ -229,9 +229,17 @@ export default function AdminDashboard() {
 
   // ── Preview (FR-47) ──────────────────────────────────────────────────────
   const handlePreview = async () => {
-    if (!announcementMsg.trim() || !announcementEndsAt) return;
+    if (!announcementMsg.trim()) {
+      setAnnouncementFeedback({ type: 'error', text: 'Message is required before previewing.' });
+      return;
+    }
+    if (!announcementEndsAt) {
+      setAnnouncementFeedback({ type: 'error', text: 'Expiry date is required before previewing.' });
+      return;
+    }
     try {
       setPreviewLoading(true);
+      setAnnouncementFeedback(null);
       const res = await adminService.previewAnnouncement({
         message: announcementMsg,
         audience: announcementAudience,
@@ -239,8 +247,9 @@ export default function AdminDashboard() {
         published: true,
       });
       if (res.success) setPreviewData(res.data);
-    } catch { /* silent */ }
-    finally { setPreviewLoading(false); }
+    } catch (err) {
+      setAnnouncementFeedback({ type: 'error', text: err.message || 'Preview failed.' });
+    } finally { setPreviewLoading(false); }
   };
 
   // ── Open edit modal prepopulated ─────────────────────────────────────────
@@ -947,7 +956,7 @@ export default function AdminDashboard() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmitEdit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmitEdit} className="p-4 sm:p-6 space-y-4">
               {editError && (
                 <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-400 text-sm flex items-start gap-2">
                   <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
@@ -1192,7 +1201,7 @@ export default function AdminDashboard() {
                   required
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-300 mb-1">Audience</label>
                   <select
@@ -1252,7 +1261,7 @@ export default function AdminDashboard() {
       {/* Delete Announcement Confirmation (FR-47) */}
       {confirmDeleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-[#1C2948] rounded-2xl border border-rose-500/30 shadow-2xl max-w-sm w-full p-6 space-y-4">
+          <div className="bg-[#1C2948] rounded-2xl border border-rose-500/30 shadow-2xl max-w-sm w-full p-4 sm:p-6 space-y-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-rose-500/20 flex items-center justify-center flex-shrink-0">
                 <Trash2 className="w-5 h-5 text-rose-400" />
