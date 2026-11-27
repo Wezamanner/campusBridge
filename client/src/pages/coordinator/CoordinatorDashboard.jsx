@@ -881,7 +881,7 @@ export default function CoordinatorDashboard() {
                   className="w-full px-3 py-2 rounded-lg bg-[#101735] border border-[#1C2948] text-white text-sm focus:outline-none focus:border-[#00C8FF]"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-300 mb-1">Placement Type</label>
                   <select
@@ -1064,7 +1064,7 @@ export default function CoordinatorDashboard() {
       {/* View Forwarded Applications Modal (Section 12.3) */}
       {forwardedListModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="relative w-full max-w-2xl p-6 rounded-2xl bg-[#0D1424] border border-[#1C2948] shadow-2xl max-h-[85vh] overflow-y-auto">
+          <div className="relative w-full max-w-2xl p-4 sm:p-6 rounded-2xl bg-[#0D1424] border border-[#1C2948] shadow-2xl max-h-[85vh] overflow-y-auto">
             <button
               onClick={() => setForwardedListModal(null)}
               className="absolute top-4 right-4 text-gray-400 hover:text-white"
