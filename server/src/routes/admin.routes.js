@@ -223,32 +223,56 @@ router.get('/courses', async (req, res, next) => {
 
 /**
  * @route   GET /api/v1/admin/activity-logs
- * @desc    Get activity logs
+ * @desc    Get activity logs with pagination and optional filters
  * @access  Protected — admin only
+ * @query   page (default 1), limit (default 50, max 100), userId (optional filter)
  */
 router.get('/activity-logs', async (req, res, next) => {
   try {
-    const { Activity } = await import('../models/Activity.js');
-    
-    const logs = await Activity.find()
-      .populate('userId', 'name email role')
-      .sort({ timestamp: -1 })
-      .limit(100);
+    const { ActivityLog } = await import('../models/ActivityLog.js');
+
+    // Parse and validate pagination
+    const page  = Math.max(1, parseInt(req.query.page)  || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+    const skip  = (page - 1) * limit;
+
+    // Optional userId filter (must be a valid ObjectId)
+    const filter = {};
+    if (req.query.userId) {
+      const mongoose = await import('mongoose');
+      if (!mongoose.default.isValidObjectId(req.query.userId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid userId filter format.',
+        });
+      }
+      filter.userId = req.query.userId;
+    }
+
+    const [logs, total] = await Promise.all([
+      ActivityLog.find(filter)
+        .populate('userId', 'name email role')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      ActivityLog.countDocuments(filter),
+    ]);
 
     res.status(200).json({
       success: true,
       message: 'Activity logs retrieved successfully.',
       count: logs.length,
-      logs,
+      data: logs,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
     });
   } catch (error) {
-    // If Activity model doesn't exist, return empty logs
-    res.status(200).json({
-      success: true,
-      message: 'Activity logs retrieved successfully.',
-      count: 0,
-      logs: [],
-    });
+    next(error);
   }
 });
 
