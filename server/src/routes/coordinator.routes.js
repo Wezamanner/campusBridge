@@ -272,8 +272,6 @@ router.patch('/applications/:id/forward', forwardApplication);
  */
 router.patch('/applications/:id/decision', recordDecision);
 
-export default router;
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Phase 14: Course Management (FR-04 / UC-C01)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -513,3 +511,5 @@ router.get('/internships/:id/applications', async (req, res, next) => {
     next(error);
   }
 });
+
+export default router;
