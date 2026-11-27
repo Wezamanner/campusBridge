@@ -27,7 +27,7 @@ export default function WelcomeBanner({ quote, tags, className = '' }) {
         <div className="space-y-4 max-w-xl">
           {/* Greeting */}
           <div className="space-y-1">
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight flex items-center gap-2">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tight flex items-center gap-2 flex-wrap">
               <span>Welcome back,</span>
               <span className="text-[#00C8FF]">{userName}!</span>
               <span className="inline-block animate-bounce">👋</span>
