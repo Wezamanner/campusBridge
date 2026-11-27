@@ -116,7 +116,7 @@ export default function NotificationDropdown({ className = '' }) {
       {/* Popover */}
       {isOpen && (
         <div
-          className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl border border-[#00C8FF]/20
+          className="absolute right-0 mt-2 w-[calc(100vw-1rem)] max-w-sm sm:max-w-sm rounded-2xl border border-[#00C8FF]/20
             bg-[#1C2948]/95 dark:bg-[#1C2948]/95 backdrop-blur-xl shadow-2xl z-50 overflow-hidden
             light:bg-white light:border-gray-200"
         >
