@@ -550,11 +550,11 @@ export default function CoordinatorCoursesPage() {
               </div>
             )}
 
-            {/* Body: two-column split */}
+            {/* Body: two-column split — stacks vertically on mobile */}
             <div className="flex flex-col sm:flex-row flex-1 overflow-hidden">
 
               {/* Left: enrolled students */}
-              <div className="sm:w-1/2 flex flex-col border-r border-[#1C2948] overflow-hidden">
+              <div className="sm:w-1/2 flex flex-col border-b sm:border-b-0 sm:border-r border-[#1C2948] overflow-hidden">
                 <div className="p-4 border-b border-[#1C2948] flex-shrink-0">
                   <p className="text-xs font-bold uppercase tracking-wider text-gray-400">
                     Assigned Students
