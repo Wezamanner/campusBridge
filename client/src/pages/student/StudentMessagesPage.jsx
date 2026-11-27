@@ -13,6 +13,7 @@ import {
   ShieldAlert,
   Clock,
   Search,
+  ArrowLeft,
 } from 'lucide-react';
 
 export default function StudentMessagesPage() {
@@ -25,6 +26,7 @@ export default function StudentMessagesPage() {
   const [loadingThread, setLoadingThread] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
+  const [mobileShowThread, setMobileShowThread] = useState(false);
   const messagesEndRef = useRef(null);
 
   const fetchConversations = async () => {
@@ -49,6 +51,7 @@ export default function StudentMessagesPage() {
     if (!partner || !partner._id) return;
     setActivePartnerId(partner._id);
     setActivePartner(partner);
+    setMobileShowThread(true);
     try {
       setLoadingThread(true);
       const res = await messagesService.getThread(partner._id);
@@ -115,7 +118,82 @@ export default function StudentMessagesPage() {
         )}
 
         {/* Messaging Container */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden min-h-[600px]">
+        <div className="border border-gray-200 rounded-xl shadow-sm overflow-hidden min-h-[500px]">
+          {/* Mobile: show one panel at a time */}
+          <div className={`md:hidden flex flex-col h-[65vh] min-h-[400px] bg-white`}>
+            {mobileShowThread && activePartner ? (
+              /* Mobile thread panel */
+              <>
+                <div className="p-3 border-b border-gray-200 bg-gray-50 flex items-center gap-3">
+                  <button
+                    onClick={() => setMobileShowThread(false)}
+                    className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+                    aria-label="Back to conversations"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                  </button>
+                  <div>
+                    <p className="text-sm font-bold text-gray-900">{activePartner.firstName} {activePartner.lastName}</p>
+                    <p className="text-xs text-gray-500 capitalize">{activePartner.role}</p>
+                  </div>
+                </div>
+                <div className="flex-1 p-3 overflow-y-auto space-y-3 bg-gray-50/30">
+                  {loadingThread ? <LoadingState /> : messages.length === 0 ? (
+                    <div className="text-center py-8 text-gray-400 text-sm">Start the conversation.</div>
+                  ) : (
+                    messages.map((m) => {
+                      const isMe = m.senderId === 'me' || (m.senderId?._id !== activePartner._id && m.senderId !== activePartner._id);
+                      return (
+                        <div key={m._id || Math.random()} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${isMe ? 'bg-blue-600 text-white rounded-br-none' : 'bg-white border border-gray-200 text-gray-800 rounded-bl-none'}`}>
+                            <p className="whitespace-pre-wrap break-words">{m.body}</p>
+                            <span className={`text-[10px] mt-1 block text-right ${isMe ? 'text-blue-100' : 'text-gray-400'}`}>
+                              {new Date(m.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+                <form onSubmit={handleSendMessage} className="p-3 border-t border-gray-200 bg-white flex gap-2">
+                  <input type="text" value={messageText} onChange={e => setMessageText(e.target.value)} placeholder="Type a message..." className="flex-1 min-w-0 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none" disabled={sending} />
+                  <Button type="submit" disabled={sending || !messageText.trim()}><Send className="w-4 h-4" /></Button>
+                </form>
+              </>
+            ) : (
+              /* Mobile conversation list */
+              <>
+                <div className="p-4 border-b border-gray-200 bg-gray-50">
+                  <h2 className="text-base font-semibold text-gray-800">Conversations</h2>
+                </div>
+                <div className="flex-1 overflow-y-auto divide-y divide-gray-100">
+                  {loadingConversations ? <div className="p-6"><LoadingState /></div> : conversations.length === 0 ? (
+                    <div className="p-6 text-center text-gray-500 text-sm"><User className="w-10 h-10 mx-auto text-gray-300 mb-2" /><p>No conversations yet.</p></div>
+                  ) : (
+                    conversations.map((conv) => {
+                      const partner = conv.user;
+                      return (
+                        <button key={partner?._id || Math.random()} onClick={() => selectConversation(partner)} className="w-full text-left p-4 hover:bg-gray-50 transition-colors flex items-start gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 text-gray-600 font-semibold text-sm">{partner?.firstName?.[0] || 'U'}</div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-gray-900 truncate">{partner?.firstName} {partner?.lastName}</p>
+                            <p className="text-xs text-gray-500 capitalize">{partner?.role || 'Staff'}</p>
+                            <p className="text-xs text-gray-600 truncate mt-0.5">{conv.lastMessage?.body || 'No messages yet'}</p>
+                          </div>
+                          {conv.unreadCount > 0 && <span className="flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-bold bg-blue-600 text-white">{conv.unreadCount}</span>}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Desktop: side-by-side */}
+          <div className="hidden md:grid md:grid-cols-3 bg-white min-h-[600px]">
           {/* Conversation List */}
           <div className="border-r border-gray-200 flex flex-col">
             <div className="p-4 border-b border-gray-200 bg-gray-50">
@@ -265,7 +343,8 @@ export default function StudentMessagesPage() {
               </div>
             )}
           </div>
-        </div>
+          </div>{/* end desktop grid */}
+        </div>{/* end messaging container */}
       </div>
     </AppLayout>
   );
