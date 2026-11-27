@@ -50,6 +50,13 @@ body {
   background-color: var(--cb-bg);
   color: var(--cb-text);
   transition: background-color 0.25s ease, color 0.25s ease;
+  /* Prevent unintended horizontal overflow at the document level */
+  overflow-x: hidden;
+}
+
+/* Ensure the root element also clips horizontal overflow */
+#root {
+  overflow-x: hidden;
 }
 
 /* ── Every hardcoded dark surface now responds to the theme ─────────────── */
