@@ -230,7 +230,7 @@ export default function StudentInternshipsPage() {
         {/* Apply Modal */}
         {selectedInternship && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-            <div className="w-full max-w-lg p-6 rounded-2xl bg-[#101735] border border-[#1C2948] shadow-2xl space-y-4">
+            <div className="w-full max-w-lg p-4 sm:p-6 rounded-2xl bg-[#101735] border border-[#1C2948] shadow-2xl space-y-4">
               <div className="flex items-start justify-between">
                 <div>
                   <h3 className="text-lg font-bold text-white">Apply for Internship</h3>
