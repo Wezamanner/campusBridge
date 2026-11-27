@@ -191,7 +191,7 @@ export default function StudentProjectsPage() {
         {/* Modal */}
         {isModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-            <div className="w-full max-w-md p-6 rounded-2xl bg-[#101735] border border-[#1C2948] shadow-2xl space-y-4">
+            <div className="w-full max-w-md p-4 sm:p-6 rounded-2xl bg-[#101735] border border-[#1C2948] shadow-2xl space-y-4">
               <h3 className="text-lg font-bold text-white">
                 {editingProject ? 'Edit Project' : 'Create Personal Project'}
               </h3>
@@ -220,7 +220,7 @@ export default function StudentProjectsPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-gray-300 font-semibold mb-1">Status</label>
                     <select
