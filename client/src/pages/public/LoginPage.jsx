@@ -78,7 +78,7 @@ export default function LoginPage() {
         </div>
 
         {/* Form Container */}
-        <div className="p-8 rounded-2xl bg-[#1C2948]/70 border border-[#00C8FF]/20 backdrop-blur-xl shadow-2xl space-y-6">
+        <div className="p-5 sm:p-8 rounded-2xl bg-[#1C2948]/70 border border-[#00C8FF]/20 backdrop-blur-xl shadow-2xl space-y-6">
           {errorMessage && (
             <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-start space-x-3 text-rose-300 text-xs">
               <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-400" />
