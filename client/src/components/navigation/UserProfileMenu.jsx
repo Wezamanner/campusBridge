@@ -56,7 +56,7 @@ export default function UserProfileMenu({ className = '' }) {
 
       {/* Popover Menu */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 rounded-2xl border border-[#00C8FF]/20 bg-[#1C2948]/95 dark:bg-[#1C2948]/95 backdrop-blur-xl shadow-2xl z-50 overflow-hidden light:bg-white light:border-gray-200">
+        <div className="absolute right-0 mt-2 w-[calc(100vw-1rem)] max-w-[256px] rounded-2xl border border-[#00C8FF]/20 bg-[#1C2948]/95 dark:bg-[#1C2948]/95 backdrop-blur-xl shadow-2xl z-50 overflow-hidden light:bg-white light:border-gray-200">
           {/* Header Info */}
           <div className="p-4 border-b border-[#1C2948] dark:border-[#1C2948] light:border-gray-100 space-y-2">
             <div className="flex items-center justify-between">
