@@ -58,6 +58,7 @@ export const ROLE_NAVIGATION = {
     { name: 'Announcements',path: '/admin/announcements',  icon: Megaphone },
     { name: 'Public Site',  path: '/admin/content',        icon: Globe },
     { name: 'Reports',      path: '/admin/reports',        icon: FileSpreadsheet },
+    { name: 'Messages',     path: '/admin/messages',       icon: MessageSquare },
     { name: 'Notifications',path: '/admin/notifications',  icon: Bell },
     { name: 'Profile',      path: '/admin/profile',        icon: User },
   ],
