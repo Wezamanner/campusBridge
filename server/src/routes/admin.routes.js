@@ -88,8 +88,6 @@ router.get('/announcements', getAdminAnnouncements);
  */
 router.post('/announcements', createAnnouncement);
 
-export default router;
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Phase 14: Soft-Delete & Reactivation (FR-22 / UC-A02)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -307,3 +305,5 @@ router.get('/reports/system', async (req, res, next) => {
     next(error);
   }
 });
+
+export default router;
