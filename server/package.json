@@ -26,6 +26,7 @@
     "test:phase14": "node src/tests/phase14-unified.test.js",
     "test:fr38-fr39": "node src/tests/fr38-fr39-preferences.test.js",
     "test:def01-grading": "node src/tests/def01-grading-maxscore.test.js",
+    "test:phaseA": "node src/tests/phaseA-critical.test.js",
     "seed:users": "node src/utils/seedUsers.js"
   },
   "dependencies": {
