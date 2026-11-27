@@ -27,7 +27,7 @@ export default function StatCard({
 
   return (
     <div
-      className={`p-5 rounded-2xl transition-all duration-300 relative overflow-hidden group
+      className={`p-3 sm:p-5 rounded-2xl transition-all duration-300 relative overflow-hidden group
         hover:shadow-glow-cyan-sm ${className}`}
       style={{
         backgroundColor: 'var(--cb-surface)',
@@ -36,27 +36,27 @@ export default function StatCard({
     >
       <div className="flex items-center justify-between">
         {/* Left: Icon + Details */}
-        <div className="flex items-center space-x-3.5">
+        <div className="flex items-center space-x-2.5 sm:space-x-3.5 min-w-0">
           <div
-            className="w-12 h-12 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105"
+            className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl flex-shrink-0 flex items-center justify-center transition-transform group-hover:scale-105"
             style={{
               backgroundColor: `${accentColor}15`,
               color: accentColor,
               boxShadow: `0 0 15px -3px ${accentColor}30`,
             }}
           >
-            {Icon && <Icon className="w-6 h-6" />}
+            {Icon && <Icon className="w-4 h-4 sm:w-6 sm:h-6" />}
           </div>
-          <div>
+          <div className="min-w-0">
             <p
-              className="text-xs uppercase tracking-wider font-semibold mb-1"
+              className="text-[10px] sm:text-xs uppercase tracking-wider font-semibold mb-0.5 sm:mb-1 truncate"
               style={{ color: 'var(--cb-text-muted)' }}
             >
               {label}
             </p>
-            <div className="flex items-baseline space-x-2">
+            <div className="flex items-baseline flex-wrap gap-x-1.5 gap-y-0.5">
               <span
-                className="text-2xl font-extrabold tracking-tight"
+                className="text-xl sm:text-2xl font-extrabold tracking-tight"
                 style={{ color: 'var(--cb-text)' }}
               >
                 {value}
@@ -72,7 +72,7 @@ export default function StatCard({
                   ) : (
                     <ArrowDownRight className="w-3.5 h-3.5 mr-0.5" />
                   )}
-                  {trend}
+                  <span className="hidden sm:inline">{trend}</span>
                 </span>
               )}
             </div>
