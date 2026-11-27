@@ -101,6 +101,7 @@ export default function App() {
             <Route path="/admin/content"        element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
             <Route path="/admin/reports"        element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
             <Route path="/admin/notifications"  element={<ProtectedRoute allowedRoles={['admin']}><NotificationsPage /></ProtectedRoute>} />
+            <Route path="/admin/messages"       element={<ProtectedRoute allowedRoles={['admin']}><MessagesPage /></ProtectedRoute>} />
             <Route path="/admin/profile"        element={<ProtectedRoute allowedRoles={['admin']}><ProfilePage /></ProtectedRoute>} />
 
             {/* ── Fallback ────────────────────────────────────────────── */}
