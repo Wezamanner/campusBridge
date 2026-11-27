@@ -319,7 +319,7 @@ export default function StudentProfilePage() {
         </div>
 
         {/* Profile Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
           {/* Main Form Column (8 cols) */}
           <div className="lg:col-span-8 space-y-8">
             <form onSubmit={handleSubmit} className="space-y-8">
